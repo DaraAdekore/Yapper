@@ -1,0 +1,66 @@
+/* Mini Main Menu */
+.mini-main-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100vh;
+    background-color: #fff;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: 20px;
+  }
+  
+  .menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .menu-header h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+  
+  .close-menu {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .room-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .room-item {
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-bottom: 5px;
+  }
+  
+  .room-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  /* Toggle Menu Button */
+  .toggle-menu-button {
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1001;
+  }
+  
+  .toggle-menu-button:hover {
+    background-color: #0056b3;
+  }

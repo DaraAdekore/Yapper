@@ -1,0 +1,44 @@
+/* Adjust the container for vertical centering */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  gap: 24px; /* Consistent spacing between elements */
+}
+
+/* Logo styling */
+.logo {
+  margin-bottom: 40px; /* Brings logo down and adds space before form */
+  max-width: 200px; /* Adjust based on your needs */
+}
+
+/* Form styling */
+.login-form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Consistent spacing between form elements */
+}
+
+/* Input fields */
+.input-field {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: #fff9e6; /* Light yellow background */
+}
+
+/* Sign In/Up button */
+.submit-button {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #4285f4; /* Your blue color */
+  color: white;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}

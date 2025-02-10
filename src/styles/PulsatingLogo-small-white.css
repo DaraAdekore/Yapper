@@ -1,0 +1,17 @@
+.pulsating-logo-small-white {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: center;
+    animation: pulse 2s infinite;
+    margin-left: 15px;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
