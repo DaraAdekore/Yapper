@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { UUID } from "crypto";
 import { haversine } from "../../components/Utilities/Utilities";
 
@@ -31,9 +31,10 @@ interface Room {
 interface RoomsState {
     rooms: Room[];
     filteredRooms: Room[];
-    activeRoomId?: UUID | null; // Tracks the currently active room
+    activeRoomId?: UUID | null;
     queryFilter: string | null;
     radiusFilter: number | null;
+    userId?: UUID | null;
 }
 
 const initialState: RoomsState = {
@@ -42,7 +43,35 @@ const initialState: RoomsState = {
     queryFilter: null,
     radiusFilter: null,
     activeRoomId: null,
+    userId: undefined,
 };
+
+interface CreateRoomPayload {
+    name: string;
+    latitude: number;
+    longitude: number;
+    creator_id: string;
+}
+
+export const createRoom = createAsyncThunk(
+    'rooms/createRoom',
+    async (roomData: CreateRoomPayload) => {
+        const response = await fetch('http://localhost:3312/rooms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(roomData),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create room');
+        }
+
+        const data = await response.json();
+        return data;
+    }
+);
 
 const roomsSlice = createSlice({
     name: "rooms",
@@ -125,19 +154,22 @@ const roomsSlice = createSlice({
         setQueryFilter: (state, action: PayloadAction<string>) => {
             state.queryFilter = action.payload;
         },
-        addMessage: (state, action: PayloadAction<{
-            roomId: UUID;
-            message: {
-                id: UUID;
-                text: string;
-                userId: UUID;
-                username: string;
-                timestamp: any;
-            };
-        }>) => {
+        addMessage: (state, action: PayloadAction<{ roomId: UUID; message: Message }>) => {
             const room = state.rooms.find(r => r.id === action.payload.roomId);
-            if (room && room.messages) {
-                room.messages.push(action.payload.message);
+            if (room) {
+                if (!room.messages) {
+                    room.messages = [];
+                }
+                // Check for duplicate messages
+                const isDuplicate = room.messages.some(m => m.id === action.payload.message.id);
+                if (!isDuplicate) {
+                    room.messages.push(action.payload.message);
+                }
+                
+                // Only increment unread if it's not the active room
+                if (state.activeRoomId !== room.id) {
+                    room.unreadCount = (room.unreadCount || 0) + 1;
+                }
             }
         },
         incrementUnread: (state, action: PayloadAction<UUID>) => {
@@ -152,13 +184,27 @@ const roomsSlice = createSlice({
                 room.unreadCount = 0;
             }
         },
-        addNewRoom: (state, action: PayloadAction<Room>) => {
-            const room = {
+        addNewRoom: (state, action: PayloadAction<{
+            id: UUID;
+            name: string;
+            latitude: number;
+            longitude: number;
+            creatorId: string;
+            creatorUsername: string;
+            isJoined: boolean;
+        }>) => {
+            const newRoom = {
                 ...action.payload,
+                unreadCount: 0,
                 isNew: true,
-                unreadCount: 0
+                messages: []
             };
-            state.rooms.push(room);
+            state.rooms.push(newRoom);
+            
+            // Only set as active room if user is joined
+            if (action.payload.isJoined) {
+                state.activeRoomId = action.payload.id;
+            }
         },
         clearNewRoomFlag: (state, action: PayloadAction<UUID>) => {
             const room = state.rooms.find(r => r.id === action.payload);
@@ -167,6 +213,17 @@ const roomsSlice = createSlice({
             }
         }
     },
+    extraReducers: (builder) => {
+        builder
+            .addCase(createRoom.fulfilled, (state, action) => {
+                state.rooms.push({
+                    ...action.payload,
+                    isJoined: true,
+                    unreadCount: 0,
+                    isNew: false
+                });
+            });
+    }
 });
 
 export const { setRooms, addRoom, removeRoom, setActiveRoom, setRoomMessages, addMessage, setFilteredRooms, setQueryFilter, setRadiusFilter, updateRoom, incrementUnread, clearUnread, addNewRoom, clearNewRoomFlag } = roomsSlice.actions;

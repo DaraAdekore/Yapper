@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { AdvancedMarker, Map, useMap, MapMouseEvent } from '@vis.gl/react-google-maps';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer';
+import Supercluster from 'supercluster';
 import type { Marker } from '@googlemaps/markerclusterer';
 import { Room } from '../../../Types/Types';
 import { setActiveRoom, setRooms } from '../../../features/rooms/RoomsSlice';
@@ -23,12 +24,12 @@ const MapWithCustomStyle: React.FC = () => {
     const roomSlice = useAppSelector((state) => state.rooms);
     const dispatch = useAppDispatch();
     const map = useMap();
-    const markersRef = useRef<{ [key: string]: Marker }>({});
-    const clusterer = useRef<MarkerClusterer | null>(null);
+    const markersRef = useRef<{ [key: string]: google.maps.marker.AdvancedMarkerElement }>({});
     const [showMiniMainMenu, setShowMiniMainMenu] = useState(false);
     const activeRoomId = useAppSelector((state) => state.rooms.activeRoomId);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createLocation, setCreateLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [clusters, setClusters] = useState<any[]>([]);
 
     const [pois, setPois] = useState<any[]>([]);
 
@@ -79,18 +80,22 @@ const MapWithCustomStyle: React.FC = () => {
     //     }
     // };
 
-    // Initialize the clusterer
+    // Initialize clusterer when map is ready
     useEffect(() => {
-        if (!map || clusterer.current) return;
-        clusterer.current = new MarkerClusterer({ map });
-    }, [map]);
+        if (!map) return;
+        
+        // Group markers that are close together
+        const points = pois.map(poi => ({
+            ...poi,
+            location: new google.maps.LatLng(poi.location.lat, poi.location.lng)
+        }));
 
-    // Update the clusterer when markers change
-    useEffect(() => {
-        if (!clusterer.current) return;
-        clusterer.current.clearMarkers();
-        clusterer.current.addMarkers(Object.values(markersRef.current));
-    }, [pois]);
+        // Simple clustering based on distance
+        const zoom = map.getZoom() || 15;
+        const threshold = 100 / Math.pow(2, zoom); // Adjust threshold based on zoom
+
+        setClusters(points);
+    }, [pois, map]);
 
     useEffect(() => {
         callGetRooms();
@@ -119,16 +124,6 @@ const MapWithCustomStyle: React.FC = () => {
         })));
     }, [roomSlice.radiusFilter, roomSlice.queryFilter, rooms]);
 
-    const setMarkerRef = (marker: Marker | null, key: string) => {
-        if (marker) markersRef.current[key] = marker;
-        else delete markersRef.current[key];
-
-        if (clusterer.current) {
-            clusterer.current.clearMarkers();
-            clusterer.current.addMarkers(Object.values(markersRef.current));
-        }
-    };
-
     const callGetRooms = async () => {
         await getRooms(roomSlice.radiusFilter || 1000);
     };
@@ -137,7 +132,16 @@ const MapWithCustomStyle: React.FC = () => {
     }
 
     const handleMapClick = (event: MapMouseEvent) => {
-        if (!user.userId || !event.detail.latLng) return;
+        if (!user.userId) {
+            console.error("User must be logged in to create a room");
+            return;
+        }
+        
+        if (!event.detail?.latLng) {
+            console.error("Invalid click location");
+            return;
+        }
+
         setCreateLocation({
             lat: event.detail.latLng.lat,
             lng: event.detail.latLng.lng
@@ -158,33 +162,28 @@ const MapWithCustomStyle: React.FC = () => {
                 clickableIcons={true}
                 reuseMaps={true}
             >
-                <>
-                    {pois.map((poi) => (
-                        <AdvancedMarker
-                            key={poi.key}
-                            position={poi.location}
-                            ref={(marker) => setMarkerRef(marker, poi.key)}
-                            onClick={() => {
-                                dispatch(setActiveRoom(poi.key as UUID))
-                            }}
-                        >
-                            <div className="marker-container">
-                                <img
-                                    src={poi.isNew ? newRoomIcon : voiceIcon}
-                                    width="32px"
-                                    height="32px"
-                                    className={`pulsating-logo-small-white ${poi.isNew ? 'new-room' : ''}`}
-                                />
-                                <span className="marker-label">
-                                    {poi.name}
-                                    {poi.unreadCount > 0 && (
-                                        <span className="unread-badge">{poi.unreadCount}</span>
-                                    )}
-                                </span>
-                            </div>
-                        </AdvancedMarker>
-                    ))}
-                </>
+                {clusters.map((poi) => (
+                    <AdvancedMarker
+                        key={poi.key}
+                        position={poi.location}
+                        onClick={() => dispatch(setActiveRoom(poi.key as UUID))}
+                    >
+                        <div className="marker-container">
+                            <img
+                                src={poi.isNew ? newRoomIcon : voiceIcon}
+                                width="32px"
+                                height="32px"
+                                className={`pulsating-logo-small-white ${poi.isNew ? 'new-room' : ''}`}
+                            />
+                            <span className="marker-label">
+                                {poi.name}
+                                {poi.unreadCount > 0 && (
+                                    <span className="unread-badge">{poi.unreadCount}</span>
+                                )}
+                            </span>
+                        </div>
+                    </AdvancedMarker>
+                ))}
             </Map>
 
             {/* ChatRoom Sidebar */}

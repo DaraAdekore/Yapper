@@ -11,37 +11,46 @@ import { UUID } from "crypto"
 // }
 
 export interface Message {
-    timestamp?: any;
-    id?:UUID;
+    type: MessageType;
+    roomId?: UUID;
+    userId?: UUID;
+    content?: string;
+    text?: string;
+    messageId?: UUID;
+    username?: string;
+    email?: string;
+    password?: string;
+    name?: string;
+    latitude?: number;
+    longitude?: number;
+    distance?: number;
+    rooms?: Room[];
+    isMember?: boolean;
+    token?: string;
+    message?: {
+        id: UUID;
+        room_id: UUID;
+        user_id: UUID;
+        username: string;
+        content: string;
+        timestamp: string;
+    };
     room?: {
         id: UUID;
         name: string;
         latitude: number;
         longitude: number;
-        creatorId: UUID;      // Match RoomsSlice interface
-        creatorUsername: string; // Match RoomsSlice interface
+        creatorId: UUID;
+        creatorUsername: string;
+        isJoined: boolean;
     };
-    type?: MessageType;
-    userId?: UUID;    // For user-related operations
-    roomId: UUID;    // For room-related operations
-    messageId?: UUID; // For message-related operations
-    content?: string;
-    username?: string;
-    email?: string;
-    password?: string;
-    name?: string;
-    text:string;
-    latitude?: number;
-    longitude?: number;
-    distance?: number;
-    rooms?: Room[];
-    isMember?:boolean;
     messages?: {
-        timestamp: any;id:UUID; user_id:UUID; room_id:UUID | undefined; content:string 
-}[];
-    message?: {id:UUID; user_id:UUID; room_id:UUID; content:string; username: string; timestamp: string };
-    roomName?: string;
-    token?: string;
+        timestamp: any;
+        id: UUID;
+        user_id: UUID;
+        room_id: UUID | undefined;
+        content: string;
+    }[];
 }
 
 export enum MessageType {
@@ -84,10 +93,23 @@ export interface Room {
     name: string;
     latitude: number;
     longitude: number;
+    creatorId: UUID;
+    creatorUsername: string;
+    isJoined?: boolean;
 }
 
 export interface ChatMessage {
     id: UUID;
     text: string;
     userId: string;
+}
+
+export interface WebSocketMessage {
+    type: MessageType;
+    roomId?: UUID;
+    userId?: UUID;
+    content?: string;
+    name?: string;
+    latitude?: number;
+    longitude?: number;
 }
