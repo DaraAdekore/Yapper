@@ -30,7 +30,6 @@ Yapper is a modern, location-based chat application that enables users to create
 - RESTful API architecture
 
 ### Development Tools
-- Git for version control
 - npm for package management
 - Environment variables for configuration
 - ESLint for code quality
