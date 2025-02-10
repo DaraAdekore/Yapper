@@ -3,6 +3,8 @@
 ## Overview
 Yapper is a modern, location-based chat application that enables users to create and join chat rooms based on their geographical location. The application allows users to discover and communicate with others in their vicinity, creating dynamic, location-specific communities.
 
+![Yapper Demo](./path/to/demo.gif)
+
 ## Features
 - 🗺️ Real-time location-based room discovery
 - 💬 Instant messaging with WebSocket communication
@@ -30,7 +32,6 @@ Yapper is a modern, location-based chat application that enables users to create
 - RESTful API architecture
 
 ### Development Tools
-- Git for version control
 - npm for package management
 - Environment variables for configuration
 - ESLint for code quality
