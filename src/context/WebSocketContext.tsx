@@ -7,17 +7,19 @@ import { stat } from 'fs';
 import { useAppSelector } from '../store/hooks';
 import { RootState } from '../store/store';
 
+// Define the context type
 interface WebSocketContextType {
 	sendMessage: (message: WebSocketMessage) => void;
 	sendChatMessage: (roomId: UUID, content: string) => void;
-	joinRoom: (roomId: string, userId: string) => void;
+	joinRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
 	createRoom: (name: string, latitude: number, longitude: number) => void;
 }
 
+// Create context with default values
 export const WebSocketContext = createContext<WebSocketContextType>({
 	sendMessage: () => {},
 	sendChatMessage: () => {},
-	joinRoom: () => {},
+	joinRoom: async () => ({ error: 'WebSocket not initialized' }),
 	createRoom: () => {}
 });
 
@@ -27,13 +29,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	const user = useSelector((state: RootState) => state.user);
 	const activeRoomId = useSelector((state: RootState) => state.rooms.activeRoomId);
 
+	// Add a ref to track sent message IDs
+	const sentMessageIds = useRef<Set<string>>(new Set());
+
 	const handleMessage = (event: MessageEvent) => {
 		const message = JSON.parse(event.data);
 
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
-					console.log('Processing new message:', message.message);
+					// Skip if we've already optimistically added this message
+					if (sentMessageIds.current.has(message.message.content)) {
+						sentMessageIds.current.delete(message.message.content);
+						return;
+					}
+					
 					dispatch(addMessage({
 						roomId: message.message.room_id,
 						message: {
@@ -87,6 +97,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 	const sendChatMessage = (roomId: UUID, content: string) => {
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
+			// Track this message content
+			sentMessageIds.current.add(content);
+			
 			const message: Message = {
 				type: MessageType.SEND_MESSAGE,
 				roomId,
@@ -94,18 +107,36 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				content
 			};
 			console.log('Sending chat message:', message);
+			
+			// Optimistically add message to UI with proper UUID type
+			dispatch(addMessage({
+				roomId,
+				message: {
+					id: crypto.randomUUID() as UUID,  // Cast to UUID type
+					text: content,
+					userId: user.userId,
+					username: user.username || 'You',
+					timestamp: new Date().toISOString()
+				}
+			}));
+			
 			ws.current.send(JSON.stringify(message));
 		}
 	};
 
-	const joinRoom = (roomId: string, userId: string) => {
-		if (ws.current?.readyState === WebSocket.OPEN) {
-			ws.current.send(JSON.stringify({
-				type: MessageType.JOIN_ROOM,
-				roomId,
-				userId
-			}));
-		}
+	const joinRoom = (roomId: string, userId: string): Promise<{error?: string}> => {
+		return new Promise((resolve) => {
+			if (ws.current?.readyState === WebSocket.OPEN) {
+				ws.current.send(JSON.stringify({
+					type: MessageType.JOIN_ROOM,
+					roomId,
+					userId
+				}));
+				resolve({});
+			} else {
+				resolve({ error: 'WebSocket not connected' });
+			}
+		});
 	};
 
 	const createRoom = (name: string, latitude: number, longitude: number) => {
@@ -140,17 +171,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		};
 	}, [user.userId]);
 
-	// Auto-join active room when it changes
-	useEffect(() => {
-		if (activeRoomId && user.userId && ws.current?.readyState === WebSocket.OPEN) {
-			ws.current.send(JSON.stringify({
-				type: MessageType.JOIN_ROOM,
-				roomId: activeRoomId,
-				userId: user.userId
-			}));
-		}
-	}, [activeRoomId, user.userId]);
-
 	const value = {
 		sendMessage,
 		sendChatMessage,
@@ -167,7 +187,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 export const useWebSocket = () => {
 	const context = useContext(WebSocketContext);
-	if (context === undefined) {
+	if (!context) {
 		throw new Error('useWebSocket must be used within a WebSocketProvider');
 	}
 	return context;

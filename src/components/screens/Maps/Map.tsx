@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { AdvancedMarker, Map, useMap, MapMouseEvent } from '@vis.gl/react-google-maps';
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer';
@@ -15,23 +15,41 @@ import '../../../styles/MapIcon.css';
 import MiniMainMenu from '../../common/MiniMainMenu';
 import { WebSocketProvider } from '../../../context/WebSocketContext'; // Import the WebSocketProvider
 import CreateRoomModal from '../../../components/screens/Maps/CreateRoomModal';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../../store/store';
 
 const MapWithCustomStyle: React.FC = () => {
     const voiceIcon = require('../../../rsrc/icons/voice.png');
     const newRoomIcon = require('../../../rsrc/icons/voice-new.png'); // Add new icon for new rooms
-    const user = useAppSelector((state) => state.user);
-    const rooms = useAppSelector((state) => state.rooms.rooms);
-    const roomSlice = useAppSelector((state) => state.rooms);
-    const dispatch = useAppDispatch();
+    const user = useSelector((state: RootState) => state.user);
+    const rooms = useSelector((state: RootState) => state.rooms.rooms);
+    const roomSlice = useSelector((state: RootState) => state.rooms);
+    const dispatch = useDispatch();
     const map = useMap();
-    const markersRef = useRef<{ [key: string]: google.maps.marker.AdvancedMarkerElement }>({});
+    const clustererRef = useRef<MarkerClusterer | null>(null);
+    const markersRef = useRef<google.maps.Marker[]>([]);
     const [showMiniMainMenu, setShowMiniMainMenu] = useState(false);
-    const activeRoomId = useAppSelector((state) => state.rooms.activeRoomId);
+    const activeRoomId = useSelector((state: RootState) => state.rooms.activeRoomId);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [createLocation, setCreateLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [createLocation, setCreateLocation] = useState<google.maps.LatLngLiteral | null>(null);
     const [clusters, setClusters] = useState<any[]>([]);
 
     const [pois, setPois] = useState<any[]>([]);
+
+    // Filter rooms based on radius, show none if radius is 0
+    const visibleRooms = useMemo(() => {
+        if (!roomSlice.radiusFilter || roomSlice.radiusFilter === 0) return [];
+        
+        return rooms.filter(room => {
+            const distance = haversine(
+                user.latitude || 0,
+                user.longitude || 0,
+                Number(room.latitude),
+                Number(room.longitude)
+            );
+            return distance <= (roomSlice.radiusFilter || 0);
+        });
+    }, [rooms, roomSlice.radiusFilter, user.latitude, user.longitude]);
 
     // Fetch rooms from the server
     const getRooms = async (radius: number) => {
@@ -83,19 +101,57 @@ const MapWithCustomStyle: React.FC = () => {
     // Initialize clusterer when map is ready
     useEffect(() => {
         if (!map) return;
-        
-        // Group markers that are close together
-        const points = pois.map(poi => ({
-            ...poi,
-            location: new google.maps.LatLng(poi.location.lat, poi.location.lng)
-        }));
 
-        // Simple clustering based on distance
-        const zoom = map.getZoom() || 15;
-        const threshold = 100 / Math.pow(2, zoom); // Adjust threshold based on zoom
+        // Initialize clusterer
+        clustererRef.current = new MarkerClusterer({
+            map,
+            algorithm: new GridAlgorithm({
+                gridSize: 60,
+                maxZoom: 15
+            })
+        });
 
-        setClusters(points);
-    }, [pois, map]);
+        return () => {
+            clustererRef.current?.clearMarkers();
+            clustererRef.current = null;
+        };
+    }, [map]);
+
+    // Update markers when visible rooms change
+    useEffect(() => {
+        if (!map || !clustererRef.current) return;
+
+        clustererRef.current.clearMarkers();
+        markersRef.current = [];
+
+        const newMarkers = visibleRooms.map(room => {
+            const marker = new google.maps.Marker({
+                position: { lat: Number(room.latitude), lng: Number(room.longitude) },
+                title: room.name,
+                label: {
+                    text: room.name,
+                    color: '#FFFFFF',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    className: 'marker-label'
+                },
+                icon: {
+                    url: room.isNew ? newRoomIcon : voiceIcon,
+                    scaledSize: new google.maps.Size(32, 32),
+                    labelOrigin: new google.maps.Point(16, 40) // Position label below icon
+                }
+            });
+
+            marker.addListener('click', () => {
+                dispatch(setActiveRoom(room.id));
+            });
+
+            return marker;
+        });
+
+        clustererRef.current.addMarkers(newMarkers);
+        markersRef.current = newMarkers;
+    }, [visibleRooms, map, dispatch]);
 
     useEffect(() => {
         callGetRooms();
@@ -162,28 +218,7 @@ const MapWithCustomStyle: React.FC = () => {
                 clickableIcons={true}
                 reuseMaps={true}
             >
-                {clusters.map((poi) => (
-                    <AdvancedMarker
-                        key={poi.key}
-                        position={poi.location}
-                        onClick={() => dispatch(setActiveRoom(poi.key as UUID))}
-                    >
-                        <div className="marker-container">
-                            <img
-                                src={poi.isNew ? newRoomIcon : voiceIcon}
-                                width="32px"
-                                height="32px"
-                                className={`pulsating-logo-small-white ${poi.isNew ? 'new-room' : ''}`}
-                            />
-                            <span className="marker-label">
-                                {poi.name}
-                                {poi.unreadCount > 0 && (
-                                    <span className="unread-badge">{poi.unreadCount}</span>
-                                )}
-                            </span>
-                        </div>
-                    </AdvancedMarker>
-                ))}
+                {/* Map component now manages markers through clusterer */}
             </Map>
 
             {/* ChatRoom Sidebar */}
@@ -217,6 +252,19 @@ const MapWithCustomStyle: React.FC = () => {
                     {'Joined rooms'}
                 </button>
             )}
+
+            <style>
+                {`
+                    .marker-label {
+                        background-color: rgba(0, 0, 0, 0.7);
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        white-space: nowrap;
+                        margin-top: 8px;
+                        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                    }
+                `}
+            </style>
         </div>
     );
 };
