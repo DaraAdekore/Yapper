@@ -20,7 +20,7 @@ const MainApp: React.FC = () => {
         dispatch(setQueryFilter(searchQuery))
     }, [searchQuery])
     useEffect(() => {
-        dispatch(setRadiusFilter(0))
+        dispatch(setRadiusFilter(null))
     }, [])
     useEffect(() => {
         dispatch(setQueryFilter(""))

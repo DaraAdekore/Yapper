@@ -32,7 +32,7 @@ interface RoomsState {
     rooms: Room[];
     filteredRooms: Room[];
     activeRoomId?: UUID | null;
-    queryFilter: string | null;
+    queryFilter: string;
     radiusFilter: number | null;
     userId?: UUID | null;
 }
@@ -40,7 +40,7 @@ interface RoomsState {
 const initialState: RoomsState = {
     rooms: [],
     filteredRooms: [],
-    queryFilter: null,
+    queryFilter: '',
     radiusFilter: null,
     activeRoomId: null,
     userId: undefined,
@@ -72,6 +72,42 @@ export const createRoom = createAsyncThunk(
         return data;
     }
 );
+
+// Simpler fuzzy search implementation
+function fuzzySearch(text: string, pattern: string): boolean {
+    if (!text || !pattern) return false;
+    console.log(text.toLowerCase().includes(pattern.toLowerCase()));
+    return text.toLowerCase().includes(pattern.toLowerCase());
+}
+
+// Update the filter function to handle independent filters
+function filterRooms(
+    rooms: Room[],
+    searchQuery: string,
+    radius: number | null,
+    userLat: number,
+    userLng: number
+): Room[] {
+    return rooms.filter(room => {
+        // Text search filter
+        const nameMatches = !searchQuery.trim() || 
+            room.name.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!nameMatches) return false;
+
+        // Radius filter (only if set)
+        if (radius !== null) {
+            const distance = haversine(
+                userLat,
+                userLng,
+                room.latitude,
+                room.longitude
+            );
+            if (distance > radius) return false;
+        }
+
+        return true;
+    });
+}
 
 const roomsSlice = createSlice({
     name: "rooms",
@@ -113,34 +149,15 @@ const roomsSlice = createSlice({
             state.activeRoomId = action.payload;
         },
         setFilteredRooms: (state, action: PayloadAction<{ latitude: number; longitude: number }>) => {
-            const { latitude: userLatitude, longitude: userLongitude } = action.payload;
-            let filteredRooms = state.rooms;
-
-            // Apply query filter if it exists
-            if (state.queryFilter) {
-                const searchTerms = state.queryFilter.split(",").map(term => term.trim().toLowerCase());
-                filteredRooms = filteredRooms.filter(room =>
-                    room.name?.toLowerCase() &&
-                    searchTerms.some(term => room.name?.toLowerCase().includes(term))
-                );
-            }
-
-            // Apply radius filter if it exists
-            if (state.radiusFilter !== null) {
-                filteredRooms = filteredRooms.filter(room =>
-                    room.latitude !== undefined &&
-                    room.longitude !== undefined &&
-                    haversine(
-                        userLatitude,
-                        userLongitude,
-                        room.latitude,
-                        room.longitude
-                    ) < (state.radiusFilter || 5000)
-                );
-            }
-
-            // Update the filteredRooms state
-            state.filteredRooms = filteredRooms;
+            const { latitude: userLat, longitude: userLng } = action.payload;
+            
+            state.filteredRooms = filterRooms(
+                state.rooms,
+                state.queryFilter,
+                state.radiusFilter,
+                userLat,
+                userLng
+            );
         },
 
         setRoomMessages: (state, action: PayloadAction<{ 
@@ -158,11 +175,13 @@ const roomsSlice = createSlice({
                 room.messages = action.payload.messages;
             }
         },
-        setRadiusFilter: (state, action: PayloadAction<number>) => {
-            state.radiusFilter = action.payload;
-        },
         setQueryFilter: (state, action: PayloadAction<string>) => {
             state.queryFilter = action.payload;
+            // Don't update filtered rooms here - let the component handle it
+        },
+        setRadiusFilter: (state, action: PayloadAction<number | null>) => {
+            state.radiusFilter = action.payload;
+            // Don't update filtered rooms here - let the component handle it
         },
         addMessage: (state, action: PayloadAction<{ roomId: UUID; message: Message }>) => {
             const room = state.rooms.find(r => r.id === action.payload.roomId);

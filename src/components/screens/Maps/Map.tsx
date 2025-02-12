@@ -5,7 +5,7 @@ import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer';
 import Supercluster from 'supercluster';
 import type { Marker } from '@googlemaps/markerclusterer';
 import { Room } from '../../../Types/Types';
-import { setActiveRoom, setRooms } from '../../../features/rooms/RoomsSlice';
+import { setActiveRoom, setRooms, setFilteredRooms } from '../../../features/rooms/RoomsSlice';
 import '../../../styles/PulsatingLogo-small-white.css';
 import { haversine } from '../../Utilities/Utilities';
 import { UUID } from 'crypto';
@@ -22,7 +22,10 @@ const MapWithCustomStyle: React.FC = () => {
     const voiceIcon = require('../../../rsrc/icons/voice.png');
     const newRoomIcon = require('../../../rsrc/icons/voice-new.png'); // Add new icon for new rooms
     const user = useSelector((state: RootState) => state.user);
-    const rooms = useSelector((state: RootState) => state.rooms.rooms);
+    const rooms = useSelector((state: RootState) => {
+        console.log('Current filtered rooms:', state.rooms.filteredRooms);
+        return state.rooms.filteredRooms;
+    });
     const roomSlice = useSelector((state: RootState) => state.rooms);
     const dispatch = useDispatch();
     const map = useMap();
@@ -36,23 +39,8 @@ const MapWithCustomStyle: React.FC = () => {
 
     const [pois, setPois] = useState<any[]>([]);
 
-    // Filter rooms based on radius, show none if radius is 0
-    const visibleRooms = useMemo(() => {
-        if (!roomSlice.radiusFilter || roomSlice.radiusFilter === 0) return [];
-        
-        return rooms.filter(room => {
-            const distance = haversine(
-                user.latitude || 0,
-                user.longitude || 0,
-                Number(room.latitude),
-                Number(room.longitude)
-            );
-            return distance <= (roomSlice.radiusFilter || 0);
-        });
-    }, [rooms, roomSlice.radiusFilter, user.latitude, user.longitude]);
-
     // Fetch rooms from the server
-    const getRooms = async (radius: number) => {
+    const getRooms = async (radius: number | null) => {
         const { latitude, longitude, userId } = user;
         try {
             const response = await fetch("http://localhost:3312/rooms", {
@@ -60,7 +48,7 @@ const MapWithCustomStyle: React.FC = () => {
                 body: JSON.stringify({
                     userLat: latitude,
                     userLng: longitude,
-                    radius: radius,
+                    radius: radius ?? 5000, // Use 5000 as default if radius is null
                     userId: userId
                 }),
                 headers: { "Content-Type": "application/json" }
@@ -73,30 +61,6 @@ const MapWithCustomStyle: React.FC = () => {
             console.error("Fetch rooms error:", error);
         }
     };
-
-    // Fetch joined rooms when the component mounts
-    // const fetchJoinedRooms = async () => {
-    //     if (!user?.userId) {
-    //         console.error("Error: userId is null or undefined");
-    //         return;
-    //     }
-    //     try {
-    //         const response = await fetch("http://localhost:3312/joined-rooms", {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify({ userId: user.userId })
-    //         });
-
-    //         if (!response.ok) {
-    //             throw new Error("Failed to fetch joined rooms");
-    //         }
-
-    //         const data = await response.json();
-    //         setJoinedRooms(data);
-    //     } catch (error) {
-    //         console.error("Error fetching joined rooms:", error);
-    //     }
-    // };
 
     // Initialize clusterer when map is ready
     useEffect(() => {
@@ -117,14 +81,14 @@ const MapWithCustomStyle: React.FC = () => {
         };
     }, [map]);
 
-    // Update markers when visible rooms change
+    // Update markers when rooms change
     useEffect(() => {
         if (!map || !clustererRef.current) return;
 
         clustererRef.current.clearMarkers();
         markersRef.current = [];
 
-        const newMarkers = visibleRooms.map(room => {
+        const newMarkers = rooms.map(room => {
             const marker = new google.maps.Marker({
                 position: { lat: Number(room.latitude), lng: Number(room.longitude) },
                 title: room.name,
@@ -138,7 +102,7 @@ const MapWithCustomStyle: React.FC = () => {
                 icon: {
                     url: room.isNew ? newRoomIcon : voiceIcon,
                     scaledSize: new google.maps.Size(32, 32),
-                    labelOrigin: new google.maps.Point(16, 40) // Position label below icon
+                    labelOrigin: new google.maps.Point(16, 40)
                 }
             });
 
@@ -151,38 +115,34 @@ const MapWithCustomStyle: React.FC = () => {
 
         clustererRef.current.addMarkers(newMarkers);
         markersRef.current = newMarkers;
-    }, [visibleRooms, map, dispatch]);
+    }, [rooms, map]);
 
     useEffect(() => {
         callGetRooms();
-        // fetchJoinedRooms();
     }, []);
 
-    // Filter and map rooms to POIs
-    useEffect(() => {
-        if (!rooms) return;
-        const radiusFilteredRooms = rooms.filter((room) => {
-            if (!roomSlice.radiusFilter) return false;
-            return haversine(user.latitude || 0, user.longitude || 0, room.latitude || 0, room.longitude || 0) <= roomSlice.radiusFilter;
-        });
-
-        const filteredRooms = radiusFilteredRooms.filter((room) => {
-            if (!roomSlice.queryFilter || roomSlice.queryFilter.trim() === "") return true;
-            return room.name?.toLowerCase().includes(roomSlice.queryFilter.toLowerCase());
-        });
-
-        setPois(filteredRooms.map((room) => ({
-            key: room.id,
-            name: room.name,
-            location: { lat: parseFloat(`${room.latitude}`), lng: parseFloat(`${room.longitude}`) },
-            isNew: false,
-            unreadCount: 0
-        })));
-    }, [roomSlice.radiusFilter, roomSlice.queryFilter, rooms]);
-
     const callGetRooms = async () => {
-        await getRooms(roomSlice.radiusFilter || 1000);
+        if (user.latitude && user.longitude) {
+            // Use 5000 as default radius when radiusFilter is null
+            const defaultRadius = roomSlice.radiusFilter ?? 5000;
+            await getRooms(defaultRadius);
+            dispatch(setFilteredRooms({
+                latitude: user.latitude,
+                longitude: user.longitude
+            }));
+        }
     };
+
+    // Add an effect to update filtered rooms when filters change
+    useEffect(() => {
+        if (user.latitude && user.longitude) {
+            dispatch(setFilteredRooms({
+                latitude: user.latitude,
+                longitude: user.longitude
+            }));
+        }
+    }, [roomSlice.queryFilter, roomSlice.radiusFilter]);
+
     function closeChat(): void {
         dispatch(setActiveRoom(null));
     }
