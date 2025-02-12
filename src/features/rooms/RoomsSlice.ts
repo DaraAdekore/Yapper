@@ -84,13 +84,23 @@ const roomsSlice = createSlice({
                 isJoined: room.isJoined || false
             }));
         },
-        updateRoom: (state, action: PayloadAction<Partial<Room>>) => {
-            const index = state.rooms.findIndex(r => r.id === action.payload.id);
-            if (index !== -1) {
-                state.rooms[index] = {
-                    ...state.rooms[index],
-                    ...action.payload
-                };
+        updateRoom: (state, action: PayloadAction<{
+            id: UUID;
+            isJoined?: boolean;
+            lastActivity?: {
+                type: 'join' | 'leave';
+                username: string;
+                timestamp: string;
+            };
+        }>) => {
+            const room = state.rooms.find(r => r.id === action.payload.id);
+            if (room) {
+                if (action.payload.isJoined !== undefined) {
+                    room.isJoined = action.payload.isJoined;
+                }
+                if (action.payload.lastActivity) {
+                    room.lastActivity = action.payload.lastActivity;
+                }
             }
         },
         addRoom: (state, action: PayloadAction<Room>) => {

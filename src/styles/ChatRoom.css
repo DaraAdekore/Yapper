@@ -422,3 +422,29 @@
 .message-group {
   margin-bottom: 20px;
 }
+
+.chat-header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.leave-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.leave-button:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.leave-button:disabled {
+  background-color: #e4606d;
+  cursor: not-allowed;
+}

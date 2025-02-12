@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { MessageType, Message, WebSocketMessage } from '../Types/Types';
-import { updateRoom, addMessage, addRoom, incrementUnread, addNewRoom } from '../features/rooms/RoomsSlice';
+import { updateRoom, addMessage, addRoom, incrementUnread, addNewRoom, setActiveRoom } from '../features/rooms/RoomsSlice';
 import { UUID } from 'crypto';
 import { stat } from 'fs';
 import { useAppSelector } from '../store/hooks';
@@ -13,6 +13,7 @@ interface WebSocketContextType {
 	sendChatMessage: (roomId: UUID, content: string) => void;
 	joinRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
 	createRoom: (name: string, latitude: number, longitude: number) => void;
+	leaveRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
 }
 
 // Create context with default values
@@ -20,7 +21,8 @@ export const WebSocketContext = createContext<WebSocketContextType>({
 	sendMessage: () => {},
 	sendChatMessage: () => {},
 	joinRoom: async () => ({ error: 'WebSocket not initialized' }),
-	createRoom: () => {}
+	createRoom: () => {},
+	leaveRoom: async () => ({ error: 'WebSocket not initialized' })
 });
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -80,6 +82,39 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 						creatorId: message.room.creatorId,
 						creatorUsername: message.room.creatorUsername,
 						isJoined: message.room.isJoined
+					}));
+				}
+				break;
+
+			case MessageType.LEAVE_ROOM_CONFIRM:
+				if (message.roomId) {
+					// Update room's isJoined status
+					dispatch(updateRoom({
+						id: message.roomId,
+						isJoined: false,
+						lastActivity: {
+							type: 'leave',
+							username: user.username || 'Unknown',
+							timestamp: new Date().toISOString()
+						}
+					}));
+
+					// If this is the active room, clear it
+					if (activeRoomId === message.roomId) {
+						dispatch(setActiveRoom(null));
+					}
+				}
+				break;
+
+			case MessageType.USER_LEFT:
+				if (message.roomId && message.userId && message.username) {
+					dispatch(updateRoom({
+						id: message.roomId,
+						lastActivity: {
+							type: 'leave',
+							username: message.username,
+							timestamp: new Date().toISOString()
+						}
 					}));
 				}
 				break;
@@ -151,6 +186,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		}
 	};
 
+	const leaveRoom = (roomId: string, userId: string): Promise<{error?: string}> => {
+		return new Promise((resolve) => {
+			if (ws.current?.readyState === WebSocket.OPEN) {
+				ws.current.send(JSON.stringify({
+					type: MessageType.LEAVE_ROOM,
+					roomId,
+					userId
+				}));
+				resolve({});
+			} else {
+				resolve({ error: 'WebSocket not connected' });
+			}
+		});
+	};
+
 	useEffect(() => {
 		if (!user.userId) return;
 
@@ -175,7 +225,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		sendMessage,
 		sendChatMessage,
 		joinRoom,
-		createRoom
+		createRoom,
+		leaveRoom
 	};
 
 	return (

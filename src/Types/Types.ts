@@ -85,6 +85,7 @@ export enum MessageType {
     CHECK_MEMBERSHIP = 'CHECK_MEMBERSHIP',
     MEMBERSHIP_STATUS = 'MEMBERSHIP_STATUS',
     USER_LEFT = "USER_LEFT",
+	LEAVE_ROOM_CONFIRM = "LEAVE_ROOM_CONFIRM",
 }
 
 // Update any other related types if needed

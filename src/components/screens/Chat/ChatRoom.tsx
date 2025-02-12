@@ -25,7 +25,7 @@ interface MessageGroup {
 const AnimatedDiv = animated('div');
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
-  const { sendChatMessage } = useWebSocket();
+  const { sendChatMessage, leaveRoom } = useWebSocket();
   const dispatch = useDispatch();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -189,6 +189,20 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     }
   }, [activeRoomId]);
 
+  const handleLeaveRoom = async () => {
+    if (!activeRoomId || !userId) return;
+    
+    setIsLoading(true);
+    try {
+      await leaveRoom(activeRoomId, userId);
+      onClose(); // Close the chat window after leaving
+    } catch (error) {
+      console.error('Error leaving room:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!activeRoomId || !activeRoom) {
     return null;
   }
@@ -209,7 +223,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         <div className="chat-header-content">
           <h2>{activeRoom.name}</h2>
         </div>
-        <button className="close-button" onClick={onClose}>×</button>
+        <div className="chat-header-buttons">
+          {isMember && (
+            <button 
+              className="leave-button"
+              onClick={handleLeaveRoom}
+              disabled={isLoading}
+            >
+              Leave Room
+            </button>
+          )}
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
       </div>
 
       {!isMember ? (
