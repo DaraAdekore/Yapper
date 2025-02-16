@@ -19,10 +19,19 @@ const MainApp: React.FC = () => {
     }, [])
 
     return (
-        <div style={{ overscrollBehavior: 'contain', overflow: 'hidden', maxHeight: "100vh" }}>
+        <div style={{ 
+            overscrollBehavior: 'contain', 
+            overflow: 'hidden', 
+            maxHeight: "100vh",
+            position: 'relative'
+        }}>
             <Navbar
                 className="bg-body-tertiary"
-                style={{ backgroundColor: '#0078ff' }}
+                style={{ 
+                    backgroundColor: '#0078ff',
+                    position: 'relative',
+                    zIndex: 9998
+                }}
             >
                 <Container
                     style={{
