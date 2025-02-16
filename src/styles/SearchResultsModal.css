@@ -1,0 +1,40 @@
+.search-results-modal {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    width: 300px;
+    max-height: calc(100vh - 80px); /* Account for navbar */
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+/* Add chat room open state */
+.search-results-modal.with-chat {
+    right: 420px; /* Move left when chat is open (assuming chat width is 400px) */
+}
+
+.search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.search-results-content {
+    overflow-y: auto;
+    max-height: 400px;
+    padding: 10px;
+}
+
+.room-result {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.room-result:hover {
+    background: #f5f5f5;
+} 

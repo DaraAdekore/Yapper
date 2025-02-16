@@ -31,6 +31,7 @@ interface Room {
 interface RoomsState {
     rooms: Room[];
     filteredRooms: Room[];
+    searchResults: Room[];
     activeRoomId?: UUID | null;
     queryFilter: string;
     radiusFilter: number | null;
@@ -40,6 +41,7 @@ interface RoomsState {
 const initialState: RoomsState = {
     rooms: [],
     filteredRooms: [],
+    searchResults: [],
     queryFilter: '',
     radiusFilter: null,
     activeRoomId: null,
@@ -240,6 +242,11 @@ const roomsSlice = createSlice({
             if (room) {
                 room.isNew = false;
             }
+        },
+        setSearchResults: (state, action: PayloadAction<Room[]>) => {
+            state.searchResults = action.payload;
+            state.rooms = action.payload;
+            state.filteredRooms = action.payload;
         }
     },
     extraReducers: (builder) => {
@@ -255,5 +262,5 @@ const roomsSlice = createSlice({
     }
 });
 
-export const { setRooms, addRoom, removeRoom, setActiveRoom, setRoomMessages, addMessage, setFilteredRooms, setQueryFilter, setRadiusFilter, updateRoom, incrementUnread, clearUnread, addNewRoom, clearNewRoomFlag } = roomsSlice.actions;
+export const { setRooms, addRoom, removeRoom, setActiveRoom, setRoomMessages, addMessage, setFilteredRooms, setQueryFilter, setRadiusFilter, updateRoom, incrementUnread, clearUnread, addNewRoom, clearNewRoomFlag, setSearchResults } = roomsSlice.actions;
 export default roomsSlice.reducer;

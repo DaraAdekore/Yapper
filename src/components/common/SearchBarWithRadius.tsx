@@ -1,128 +1,67 @@
-import React, { useState, useEffect } from "react";
-import { Form, FormControl, InputGroup, Button } from "react-bootstrap";
+import React, { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setQueryFilter, setRadiusFilter, setFilteredRooms } from '../../features/rooms/RoomsSlice';
+import { Button } from 'react-bootstrap';
+import '../../styles/SearchBar.css';
 
-import { useAppSelector } from "../../store/hooks";
+export default function SearchBarWithRadius() {
+    const dispatch = useAppDispatch();
+    const user = useAppSelector(state => state.user);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [radius, setRadius] = useState<number | null>(null);
 
-interface SearchBarWithRadiusProps {
-    searchQuery: string;
-    setQuery: (e: string) => void;
-    radius: number;
-    setRadius: (e: number) => void;
-}
-
-const SearchBarWithRadius: React.FC<SearchBarWithRadiusProps> = ({
-    searchQuery,
-    setQuery,
-    radius,
-    setRadius,
-}) => {
-    
-    const user = useAppSelector((state) => state.user);
-
-    const handleSearch = async () => {
-        console.log(`Search Query: ${searchQuery}, Radius: ${radius}km`);
-        const searchT = searchQuery.split(",");
-        try {
-            const response = await fetch("http://localhost:3312/rooms", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    radius: radius >= 1 ? radius : 1000,
-                    searchT,
-                }),
-            });
-
-            if (!response.ok) {
-                console.log(response);
-            } else {
-                const data = await response.json();
-                console.log("Filtered rooms:", data);
-            }
-        } catch (error) {
-            console.error(`Error getting filtered rooms: ${error}`);
-        }
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+        dispatch(setQueryFilter(value));
+        applyFilters();
     };
 
+    const handleRadiusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value === '' || e.target.value === '0' ? null : parseInt(e.target.value);
+        setRadius(value);
+        dispatch(setRadiusFilter(value));
+        applyFilters();
+    };
+
+    const applyFilters = () => {
+        if (!user.latitude || !user.longitude) return;
+        dispatch(setFilteredRooms({
+            latitude: user.latitude,
+            longitude: user.longitude
+        }));
+    };
+
+    useEffect(() => {
+        applyFilters();
+    }, [user.latitude, user.longitude]);
+
     return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                padding: "10px",
-                marginLeft: "auto",
-            }}
-        >
-            <Form
-                style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: "#ffffff",
-                    borderRadius: "10px",
-                    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-                    padding: "5px 10px",
-                    width: "100%",
-                    position: "relative", // Ensure the parent is positioned relatively
-                }}
+        <div className="search-container">
+            <input
+                type="text"
+                placeholder="Search rooms..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="search-input"
+            />
+            <input
+                type="number"
+                value={radius ?? ''}
+                onChange={handleRadiusChange}
+                className="radius-input"
+                min="1"
+                max="5000"
+                step="100"
+                placeholder="No radius filter"
+            />
+            <span className="radius-label">KM</span>
+            <Button 
+                onClick={applyFilters}
+                className="search-button"
             >
-                {/* Search Input */}
-                <InputGroup className="me-2" style={{ flex: "2" }}>
-                    <FormControl
-                        type="text"
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => setQuery(e.target.value)}
-                        style={{
-                            border: "none",
-                            borderRadius: "5px",
-                            boxShadow: "inset 0px 2px 4px rgba(0, 0, 0, 0.1)",
-                            marginLeft: "10px",
-                            marginRight: "10px",
-                        }}
-                    />
-                </InputGroup>
-
-                {/* Radius Input */}
-                <InputGroup className="me-2" style={{ flex: "1" }}>
-                    <FormControl
-                        type="number"
-                        placeholder="Radius (km)"
-                        value={radius}
-                        onChange={(e) => {
-                            const value = Math.max(0, Math.min(6800, parseInt(e.target.value)));
-                            setRadius(value);
-                        }}
-                        style={{
-                            border: "none",
-                            borderRadius: "5px",
-                            boxShadow: "inset 0px 2px 4px rgba(0, 0, 0, 0.1)",
-                            marginLeft: "10px",
-                            marginRight: "10px",
-                        }}
-                    />
-                </InputGroup>
-
-                {/* Search Button */}
-                <Button
-                    variant="primary"
-                    onClick={handleSearch}
-                    style={{
-                        backgroundColor: "#0078ff",
-                        border: "none",
-                        padding: "10px 20px",
-                        borderRadius: "10px",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                    }}
-                >
-                    Search
-                </Button>
-            </Form>
+                Search
+            </Button>
         </div>
     );
-};
-
-export default SearchBarWithRadius;
+}
