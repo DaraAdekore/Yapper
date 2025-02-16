@@ -150,16 +150,22 @@ const roomsSlice = createSlice({
         setActiveRoom: (state, action: PayloadAction<UUID | null>) => {
             state.activeRoomId = action.payload;
         },
-        setFilteredRooms: (state, action: PayloadAction<{ latitude: number; longitude: number }>) => {
-            const { latitude: userLat, longitude: userLng } = action.payload;
-            
-            state.filteredRooms = filterRooms(
-                state.rooms,
-                state.queryFilter,
-                state.radiusFilter,
-                userLat,
-                userLng
-            );
+        setFilteredRooms: (state, action: PayloadAction<{ 
+            latitude: number; 
+            longitude: number;
+            rooms?: Room[];
+        }>) => {
+            if (action.payload.rooms) {
+                state.filteredRooms = action.payload.rooms;
+            } else {
+                state.filteredRooms = filterRooms(
+                    state.rooms,
+                    state.queryFilter,
+                    state.radiusFilter,
+                    action.payload.latitude,
+                    action.payload.longitude
+                );
+            }
         },
 
         setRoomMessages: (state, action: PayloadAction<{ 

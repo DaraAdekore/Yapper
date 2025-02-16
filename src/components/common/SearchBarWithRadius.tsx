@@ -34,9 +34,30 @@ export default function SearchBarWithRadius() {
         }));
     };
 
-    const handleSearchClick = () => {
-        applyFilters();
-        setShowResults(true);
+    const handleSearchClick = async () => {
+        if (!user.userId) return;
+
+        try {
+            const params = new URLSearchParams({
+                userId: user.userId,
+                ...(searchQuery && { searchTerm: searchQuery }),
+                ...(radius && { radius: radius.toString() })
+            });
+
+            const response = await fetch(`http://localhost:3312/api/search-rooms?${params}`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Search results:', data); // Debug log
+                dispatch(setFilteredRooms({
+                    latitude: user.latitude!,
+                    longitude: user.longitude!,
+                    rooms: data.rooms // Pass the rooms from the API
+                }));
+                setShowResults(true);
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+        }
     };
 
     useEffect(() => {
