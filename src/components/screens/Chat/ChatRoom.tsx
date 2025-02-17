@@ -29,7 +29,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const dispatch = useDispatch();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [{ x, y }, api] = useSpring(() => ({ x: 35, y: 35 }));
+  const [{ x, y }, api] = useSpring(() => ({ 
+    x: window.innerWidth - 450, // Position from right edge
+    y: 80 // Position below navbar
+  }));
   const [dimensions, setDimensions] = useState({ width: 400, height: 600 });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -140,13 +143,15 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   };
 
   const groupMessagesByDate = (messages: any[]) => {
+    if (!messages || messages.length === 0) return [];
+    
     // Sort messages by timestamp in ascending order (oldest to newest)
     const sortedMessages = [...messages].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
     // Group sorted messages by date
-    const groups = sortedMessages.reduce((groups: MessageGroup[], message) => {
+    return sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
       
@@ -158,8 +163,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       
       return groups;
     }, []);
-
-    return groups;
   };
 
   const getMessageDate = (dateStr: string) => {
@@ -267,7 +270,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                 <div className="date-separator">
                   <span>{getMessageDate(group.date)}</span>
                 </div>
-                {group.messages.map((message) => (
+                {[...group.messages].reverse().map((message) => (
                   <div 
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
