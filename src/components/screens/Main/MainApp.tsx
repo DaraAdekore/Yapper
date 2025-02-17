@@ -27,17 +27,18 @@ const MainApp: React.FC = () => {
     return (
         <div className="main-app">
             <NavbarComponent />
-            {!showMiniMainMenu && (
-                <button 
-                    onClick={() => setShowMiniMainMenu(true)}
-                    className="joined-rooms-button"
-                >
-                    Joined Rooms
-                </button>
-            )}
-
-            <div style={{ position: 'relative' }}>
-                <ApiProvider />
+            <div className="main-content">
+                {!showMiniMainMenu && (
+                    <button 
+                        onClick={() => setShowMiniMainMenu(true)}
+                        className="joined-rooms-button"
+                    >
+                        Joined Rooms
+                    </button>
+                )}
+                <div style={{ position: 'relative' }}>
+                    <ApiProvider />
+                </div>
             </div>
             
             {showMiniMainMenu && (
@@ -45,7 +46,7 @@ const MainApp: React.FC = () => {
                     position: 'fixed',
                     top: '80px',
                     left: '20px',
-                    zIndex: 10000
+                    zIndex: 1001
                 }}>
                     <MiniMainMenu onClose={() => setShowMiniMainMenu(false)} />
                 </div>
