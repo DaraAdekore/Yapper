@@ -6,7 +6,7 @@ export const Logout = () => {
     const dispatch = useAppDispatch();
     const logout = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/logout`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/logout`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {

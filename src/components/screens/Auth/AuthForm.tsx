@@ -25,7 +25,7 @@ export default function AuthForm() {
     setStatus("Logging in...");
 
     try {
-      const result = await fetch(`${process.env.REACT_APP_API_URL}/auth/login`, {
+      const result = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
         method: 'POST',
         body: JSON.stringify({ email, password }),
         credentials: 'include',
