@@ -8,6 +8,7 @@ import ApiProvider from '../Maps/ApiProvider';
 import { useDispatch } from 'react-redux';
 import { setQueryFilter, setRadiusFilter } from '../../../features/rooms/RoomsSlice';
 import MiniMainMenu from '../../common/MiniMainMenu';
+import NavbarComponent from '../../common/Navbar';
 
 const MainApp: React.FC = () => {
     const user = useAppSelector((state) => state.user);
@@ -23,52 +24,8 @@ const MainApp: React.FC = () => {
     }, [])
 
     return (
-        <div style={{ 
-            overscrollBehavior: 'contain', 
-            overflow: 'hidden', 
-            maxHeight: "100vh",
-            position: 'relative'
-        }}>
-            <Navbar
-                className="bg-body-tertiary"
-                style={{ 
-                    backgroundColor: '#0078ff',
-                    position: 'relative',
-                    zIndex: 9998
-                }}
-            >
-                <Container
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        position: 'relative',
-                        width: '100%'
-                    }}
-                >
-                    <Navbar.Brand>
-                        <PulsatingLogoSmallWhite />
-                    </Navbar.Brand>
-                    
-                    <div style={{ 
-                        position: 'absolute',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}>
-                        <SearchBarWithRadius />
-                    </div>
-
-                    <div style={{ marginLeft: 'auto' }}>
-                        <div style={{ color: 'white', paddingRight: '10px' }}>
-                            Logged in as {user.username}
-                        </div>
-                        <Logout />
-                    </div>
-                </Container>
-            </Navbar>
-
+        <div className="main-app">
+            <NavbarComponent />
             {!showMiniMainMenu && (
                 <button 
                     onClick={() => setShowMiniMainMenu(true)}
