@@ -100,7 +100,13 @@ export default function AuthForm() {
           setError("Please enable location services to use this app.");
         }
       );
-
+      console.log({
+        email,
+        password,
+        username: username.trim(),
+        latitude,
+        longitude,
+      });
       const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/register`, {
         method: "POST",
         body: JSON.stringify({
