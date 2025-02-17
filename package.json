@@ -66,7 +66,7 @@
     "allowedHosts": [
       "localhost",
       ".localhost",
-      "https://yapper-2d1p.onrender.com/"
+      "https://yapper-2d1p.onrender.com"
     ]
   }
 }
