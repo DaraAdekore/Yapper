@@ -46,17 +46,26 @@
 @media (max-width: 768px) {
   .navbar {
     height: auto;
-    padding: 8px;
+    padding: 12px 8px;
   }
 
   .navbar-container {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
   }
 
   .navbar-search {
     order: 3;
     flex: 1 0 100%;
+    margin-top: 8px;
+  }
+
+  .navbar-actions {
+    gap: 10px;
+  }
+
+  .username {
+    font-size: 13px;
   }
 }
 

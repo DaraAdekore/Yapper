@@ -140,12 +140,13 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   };
 
   const groupMessagesByDate = (messages: any[]) => {
-    // First, sort all messages by timestamp
+    // Sort messages by timestamp in ascending order (oldest to newest)
     const sortedMessages = [...messages].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    return sortedMessages.reduce((groups: MessageGroup[], message) => {
+    // Group sorted messages by date
+    const groups = sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
       
@@ -157,6 +158,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       
       return groups;
     }, []);
+
+    return groups;
   };
 
   const getMessageDate = (dateStr: string) => {
