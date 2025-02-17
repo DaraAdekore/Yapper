@@ -68,6 +68,6 @@
       ".localhost",
       "yapper-2d1p.onrender.com"
     ],
-    "proxy": "https://yapper-2d1p.onrender.com"
+    "proxy": "https://yapper-2d1p.onrender.com:3312/"
   }
 }

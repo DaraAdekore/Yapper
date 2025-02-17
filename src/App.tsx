@@ -18,7 +18,7 @@ function App() {
         const validateToken = async () => {
             try {
                 dispatch(setLoading(true)); // Start loading state
-                const response = await fetch(`${process.env.REACT_APP_API_URL}/verify-token`, {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.PORT}/verify-token`, {
                     method: 'GET',
                     credentials: 'include', // Include cookies in the request
                     headers: {

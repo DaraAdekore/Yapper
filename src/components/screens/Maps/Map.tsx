@@ -43,7 +43,7 @@ const MapWithCustomStyle: React.FC = () => {
     const getRooms = async (radius: number | null) => {
         const { latitude, longitude, userId } = user;
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/rooms`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.PORT}/rooms`, {
                 method: "POST",
                 body: JSON.stringify({
                     userLat: latitude,

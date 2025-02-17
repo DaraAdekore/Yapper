@@ -25,7 +25,7 @@ export default function AuthForm() {
     setStatus("Logging in...");
 
     try {
-      const result = await fetch(`${process.env.REACT_APP_API_URL}/auth/login`, {
+      const result = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.PORT}/auth/login`, {
         method: 'POST',
         body: JSON.stringify({ email, password }),
         credentials: 'include',
@@ -43,7 +43,7 @@ export default function AuthForm() {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
             const id = data.id;
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/location`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.PORT}/location`, {
               method: 'POST',
               body: JSON.stringify({ latitude, longitude, id }),
               credentials: 'include',
@@ -101,7 +101,7 @@ export default function AuthForm() {
         }
       );
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/register`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.PORT}/auth/register`, {
         method: "POST",
         body: JSON.stringify({
           email,
