@@ -10,7 +10,7 @@ interface CreateRoomPayload {
 export const createRoom = createAsyncThunk(
     'rooms/createRoom',
     async (roomData: CreateRoomPayload) => {
-        const response = await fetch('http://localhost:3312/rooms', {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/rooms`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

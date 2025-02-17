@@ -43,7 +43,7 @@ export default function AuthForm() {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
             const id = data.id;
-            const response = await fetch('http://localhost:3312/location', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/location`, {
               method: 'POST',
               body: JSON.stringify({ latitude, longitude, id }),
               credentials: 'include',
