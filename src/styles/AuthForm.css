@@ -5,6 +5,9 @@
   align-items: center;
   min-height: 80vh;
   padding: 20px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .auth-form {
@@ -23,11 +26,12 @@
 }
 
 .auth-input {
+  width: 100%;
   padding: 12px;
   margin-bottom: 15px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 1rem;
   transition: border-color 0.3s ease;
 }
 
@@ -87,5 +91,20 @@
 
 .cancel-button {
   background-color: #dc3545;
+}
+
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 10px;
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+  
+  .auth-button {
+    width: 100%;
+    margin: 5px 0;
+  }
 }
   

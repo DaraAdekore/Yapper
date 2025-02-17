@@ -1,0 +1,27 @@
+:root {
+  --mobile-breakpoint: 480px;
+  --tablet-breakpoint: 768px;
+  --desktop-breakpoint: 1024px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Responsive font sizes */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+

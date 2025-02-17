@@ -1,0 +1,16 @@
+.map-container {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    width: 100%;
+    padding: 10px;
+  }
+  
+  .radius-input {
+    width: 80px;
+  }
+} 
