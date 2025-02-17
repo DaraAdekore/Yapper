@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux';
 import { setQueryFilter, setRadiusFilter } from '../../../features/rooms/RoomsSlice';
 import MiniMainMenu from '../../common/MiniMainMenu';
 import NavbarComponent from '../../common/Navbar';
+import '../../../styles/MainApp.css';
 
 const MainApp: React.FC = () => {
     const user = useAppSelector((state) => state.user);
