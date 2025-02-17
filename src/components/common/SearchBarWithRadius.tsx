@@ -46,7 +46,7 @@ export default function SearchBarWithRadius() {
                 ...(searchRadius && { radius: searchRadius.toString() })
             });
 
-            const response = await fetch(`http://localhost:3312/api/search-rooms?${params}`);
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/search-rooms?${params}`);
             
             if (!response.ok) {
                 throw new Error('Search failed');

@@ -203,7 +203,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	useEffect(() => {
 		if (!user.userId) return;
 
-		ws.current = new WebSocket('ws://localhost:3312');
+		ws.current = new WebSocket(process.env.REACT_APP_WS_URL || 'ws://localhost:3312');
 
 		ws.current.onopen = () => {
 			console.log('WebSocket connected');
