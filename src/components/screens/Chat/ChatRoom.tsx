@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { useSpring, animated, to } from "@react-spring/web";
 import { useWebSocket } from "../../../context/WebSocketContext";
 import "../../../styles/ChatRoom.css";
 import { useAppSelector } from "../../../store/hooks";
@@ -22,21 +21,11 @@ interface MessageGroup {
   }[];
 }
 
-const AnimatedDiv = animated('div');
-
 const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const { sendChatMessage, leaveRoom } = useWebSocket();
   const dispatch = useDispatch();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [{ x, y }, api] = useSpring(() => ({ 
-    x: window.innerWidth - 450, // Position from right edge
-    y: 80 // Position below navbar
-  }));
-  const [dimensions, setDimensions] = useState({ width: 400, height: 600 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [newMessage, setNewMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [showChat, setShowChat] = useState(true);
@@ -46,47 +35,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const userId = useAppSelector((state) => state.user.userId);
 
   const isMember = activeRoom?.isJoined ?? false;
-
-  const handleMouseDown = (e: React.MouseEvent, type: 'drag' | 'resize') => {
-    if (type === 'drag') {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - x.get(), y: e.clientY - y.get() });
-    } else {
-      setIsResizing(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      api.start({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-        immediate: true
-      });
-    } else if (isResizing) {
-      const newWidth = Math.max(300, Math.min(800, dimensions.width + (e.clientX - dragStart.x)));
-      const newHeight = Math.max(400, Math.min(800, dimensions.height + (e.clientY - dragStart.y)));
-      setDimensions({ width: newWidth, height: newHeight });
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setIsResizing(false);
-  };
-
-  useEffect(() => {
-    if (isDragging || isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, isResizing]);
 
   const handleJoinRoom = async () => {
     if (!activeRoomId || !userId) return;
@@ -210,20 +158,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   }
 
   return (
-    <AnimatedDiv
-      className={`chat-room ${showChat ? 'open' : ''}`}
-      style={{
-        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
-        width: dimensions.width,
-        height: dimensions.height,
-      }}
-    >
-      <div 
-        className="chat-header"
-        onMouseDown={(e) => handleMouseDown(e, 'drag')}
-      >
+    <div className={`chat-room ${showChat ? 'open' : ''}`}>
+      <div className="chat-header">
         <div className="chat-header-content">
-          <h2>{activeRoom.name}</h2>
+          <h2>{activeRoom?.name}</h2>
         </div>
         <div className="chat-header-buttons">
           {isMember && (
@@ -315,11 +253,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
           </div>
         </>
       )}
-      <div 
-        className="resize-handle"
-        onMouseDown={(e) => handleMouseDown(e, 'resize')}
-      />
-    </AnimatedDiv>
+    </div>
   );
 };
 
