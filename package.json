@@ -66,8 +66,8 @@
     "allowedHosts": [
       "localhost",
       ".localhost",
-      "yapper-2d1p.onrender.com"
+      "yapper-backend-pomo.onrender.com"
     ],
-    "proxy": "https://yapper-2d1p.onrender.com:3312/"
+    "proxy": "https://yapper-backend-pomo.onrender.com"
   }
 }

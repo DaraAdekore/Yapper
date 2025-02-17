@@ -90,7 +90,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.PORT}/api/rooms/join`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
