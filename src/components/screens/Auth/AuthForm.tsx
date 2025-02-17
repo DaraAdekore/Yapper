@@ -25,7 +25,7 @@ export default function AuthForm() {
     setStatus("Logging in...");
 
     try {
-      const result = await fetch('http://localhost:3312/login', {
+      const result = await fetch(`${process.env.REACT_APP_API_URL}/auth/login`, {
         method: 'POST',
         body: JSON.stringify({ email, password }),
         credentials: 'include',
@@ -101,7 +101,7 @@ export default function AuthForm() {
         }
       );
 
-      const response = await fetch("http://localhost:3312/register", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/register`, {
         method: "POST",
         body: JSON.stringify({
           email,
