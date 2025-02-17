@@ -11,7 +11,7 @@ interface SearchResultsModalProps {
 
 export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({ onClose }) => {
     const dispatch = useDispatch();
-    const filteredRooms = useSelector((state: RootState) => state.rooms.filteredRooms);
+    const searchResults = useSelector((state: RootState) => state.rooms.searchResults);
     const searchQuery = useSelector((state: RootState) => state.rooms.queryFilter);
     const activeRoomId = useSelector((state: RootState) => state.rooms.activeRoomId);
 
@@ -27,11 +27,11 @@ export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({ onClose 
                 <button onClick={onClose}>&times;</button>
             </div>
             <div className="search-results-content">
-                {filteredRooms.length === 0 ? (
+                {searchResults.length === 0 ? (
                     <p>No rooms found</p>
                 ) : (
                     <ul>
-                        {filteredRooms.map(room => (
+                        {searchResults.map(room => (
                             <li 
                                 key={room.id} 
                                 className="room-result"

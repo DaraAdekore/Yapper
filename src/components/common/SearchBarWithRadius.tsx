@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setQueryFilter, setRadiusFilter, setFilteredRooms } from '../../features/rooms/RoomsSlice';
+import { setQueryFilter, setRadiusFilter, setFilteredRooms, setSearchResults } from '../../features/rooms/RoomsSlice';
 import { Button } from 'react-bootstrap';
 import { SearchResultsModal } from '../screens/Maps/SearchResultsModal';
 import '../../styles/SearchBar.css';
@@ -11,6 +11,7 @@ export default function SearchBarWithRadius() {
     const [searchQuery, setSearchQuery] = useState('');
     const [radius, setRadius] = useState<number | null>(null);
     const [showResults, setShowResults] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -34,27 +35,51 @@ export default function SearchBarWithRadius() {
         }));
     };
 
+    const fetchSearchResults = async (searchTerm: string, searchRadius: number | null) => {
+        if (!user.userId) return;
+
+        try {
+            setIsSearching(true);
+            const params = new URLSearchParams({
+                userId: user.userId,
+                ...(searchTerm && { searchTerm }),
+                ...(searchRadius && { radius: searchRadius.toString() })
+            });
+
+            const response = await fetch(`http://localhost:3312/api/search-rooms?${params}`);
+            
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+
+            const data = await response.json();
+            // Transform snake_case to camelCase
+            const transformedRooms = data.rooms.map((room: any) => ({
+                id: room.id,
+                name: room.name,
+                latitude: room.latitude,
+                longitude: room.longitude,
+                creatorId: room.creator_id,
+                creatorUsername: room.creator_username,  // Map from creator_username
+                isJoined: false,
+                unreadCount: 0,
+                messages: []
+            }));
+            
+            dispatch(setSearchResults(transformedRooms));
+            setShowResults(true);
+        } catch (error) {
+            console.error('Search error:', error);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
     const handleSearchClick = async () => {
         if (!user.userId) return;
 
         try {
-            const params = new URLSearchParams({
-                userId: user.userId,
-                ...(searchQuery && { searchTerm: searchQuery }),
-                ...(radius && { radius: radius.toString() })
-            });
-
-            const response = await fetch(`http://localhost:3312/api/search-rooms?${params}`);
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Search results:', data); // Debug log
-                dispatch(setFilteredRooms({
-                    latitude: user.latitude!,
-                    longitude: user.longitude!,
-                    rooms: data.rooms // Pass the rooms from the API
-                }));
-                setShowResults(true);
-            }
+            await fetchSearchResults(searchQuery, radius);
         } catch (error) {
             console.error('Search error:', error);
         }

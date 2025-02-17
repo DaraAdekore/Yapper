@@ -29,9 +29,9 @@ interface Room {
 }
 
 interface RoomsState {
-    rooms: Room[];
-    filteredRooms: Room[];
-    searchResults: Room[];
+    rooms: Room[];             // All joined rooms
+    filteredRooms: Room[];     // Filtered joined rooms
+    searchResults: Room[];     // Search results (separate from joined rooms)
     activeRoomId?: UUID | null;
     queryFilter: string;
     radiusFilter: number | null;
@@ -155,11 +155,12 @@ const roomsSlice = createSlice({
             longitude: number;
             rooms?: Room[];
         }>) => {
+            // This should only filter joined rooms
             if (action.payload.rooms) {
                 state.filteredRooms = action.payload.rooms;
             } else {
                 state.filteredRooms = filterRooms(
-                    state.rooms,
+                    state.rooms,  // Filter from joined rooms
                     state.queryFilter,
                     state.radiusFilter,
                     action.payload.latitude,
@@ -248,9 +249,8 @@ const roomsSlice = createSlice({
             }
         },
         setSearchResults: (state, action: PayloadAction<Room[]>) => {
+            // Only update search results, don't affect joined rooms
             state.searchResults = action.payload;
-            state.rooms = action.payload;
-            state.filteredRooms = action.payload;
         }
     },
     extraReducers: (builder) => {
