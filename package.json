@@ -67,6 +67,6 @@
       "localhost",
       ".localhost"
     ],
-    "proxy": "https://localhost:3312/"
+    "proxy": "https://yapper-backend-pomo.onrender.com:3312/"
   }
 }
