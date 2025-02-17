@@ -80,8 +80,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 						latitude: message.room.latitude,
 						longitude: message.room.longitude,
 						creatorId: message.room.creatorId,
-						creatorUsername: message.room.creatorUsername,
-						isJoined: message.room.isJoined
+						creatorUsername: message.room.creatorUsername
 					}));
 				}
 				break;

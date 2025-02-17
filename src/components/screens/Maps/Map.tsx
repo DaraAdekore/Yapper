@@ -48,7 +48,7 @@ const MapWithCustomStyle: React.FC = () => {
                 body: JSON.stringify({
                     userLat: latitude,
                     userLng: longitude,
-                    radius: radius ?? 5000, // Use 5000 as default if radius is null
+                    radius: radius ?? 5000,
                     userId: userId
                 }),
                 headers: { "Content-Type": "application/json" }
@@ -56,10 +56,12 @@ const MapWithCustomStyle: React.FC = () => {
             if (response.ok) {
                 const rooms = await response.json();
                 dispatch(setRooms(rooms));
+                return rooms;
             }
         } catch (error) {
             console.error("Fetch rooms error:", error);
         }
+        return [];
     };
 
     // Initialize clusterer when map is ready
@@ -123,13 +125,15 @@ const MapWithCustomStyle: React.FC = () => {
 
     const callGetRooms = async () => {
         if (user.latitude && user.longitude) {
-            // Use 5000 as default radius when radiusFilter is null
             const defaultRadius = roomSlice.radiusFilter ?? 5000;
-            await getRooms(defaultRadius);
-            dispatch(setFilteredRooms({
-                latitude: user.latitude,
-                longitude: user.longitude
-            }));
+            const fetchedRooms = await getRooms(defaultRadius);
+            if (fetchedRooms) {
+                dispatch(setFilteredRooms({
+                    latitude: user.latitude,
+                    longitude: user.longitude,
+                    rooms: fetchedRooms
+                }));
+            }
         }
     };
 
@@ -152,7 +156,7 @@ const MapWithCustomStyle: React.FC = () => {
             console.error("User must be logged in to create a room");
             return;
         }
-        
+
         if (!event.detail?.latLng) {
             console.error("Invalid click location");
             return;
@@ -163,6 +167,55 @@ const MapWithCustomStyle: React.FC = () => {
             lng: event.detail.latLng.lng
         });
         setShowCreateModal(true);
+    };
+
+    // Add this function to handle new room creation
+    const handleRoomCreated = async () => {
+        const fetchedRooms = await getRooms(roomSlice.radiusFilter ?? 5000);
+        if (fetchedRooms) {
+            // First update the Redux store
+            dispatch(setRooms(fetchedRooms));
+            
+            // Then update markers
+            if (clustererRef.current) {
+                clustererRef.current.clearMarkers();
+                const newMarkers = fetchedRooms.map((room: Room) => {
+                    const marker = new google.maps.Marker({
+                        position: { lat: Number(room.latitude), lng: Number(room.longitude) },
+                        title: room.name,
+                        label: {
+                            text: room.name,
+                            color: '#FFFFFF',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            className: 'marker-label'
+                        },
+                        icon: {
+                            url: voiceIcon, // Just use voiceIcon for now
+                            scaledSize: new google.maps.Size(32, 32),
+                            labelOrigin: new google.maps.Point(16, 40)
+                        }
+                    });
+
+                    marker.addListener('click', () => {
+                        dispatch(setActiveRoom(room.id));
+                    });
+
+                    return marker;
+                });
+
+                // Add new markers to clusterer
+                clustererRef.current.addMarkers(newMarkers);
+                markersRef.current = newMarkers;
+            }
+
+            // Finally update filtered rooms
+            dispatch(setFilteredRooms({
+                latitude: user.latitude!,
+                longitude: user.longitude!,
+                rooms: fetchedRooms
+            }));
+        }
     };
 
     return (
@@ -189,30 +242,17 @@ const MapWithCustomStyle: React.FC = () => {
                     />
                 </div>
             )}
-
-            {/* Mini Main Menu */}
-            {showMiniMainMenu && (
-                <MiniMainMenu
-                    onClose={() => setShowMiniMainMenu(false)}
-                />
-            )}
-
             {/* Create Room Modal */}
             {showCreateModal && createLocation && (
                 <CreateRoomModal
-                    onClose={() => setShowCreateModal(false)}
+                    onClose={async () => {
+                        setShowCreateModal(false);
+                        await handleRoomCreated();
+                    }}
                     latitude={createLocation.lat}
                     longitude={createLocation.lng}
                 />
             )}
-
-            {/* Button to toggle Mini Main Menu */}
-            {!showMiniMainMenu && (
-                <button className="toggle-menu-button" onClick={() => setShowMiniMainMenu(true)}>
-                    {'Joined rooms'}
-                </button>
-            )}
-
             <style>
                 {`
                     .marker-label {

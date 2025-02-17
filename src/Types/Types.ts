@@ -92,11 +92,14 @@ export enum MessageType {
 export interface Room {
     id: UUID;
     name: string;
+    isJoined: boolean;
+    messages?: Message[];
+    unreadCount: number;
+    isNew?: boolean;
     latitude: number;
     longitude: number;
-    creatorId: UUID;
+    creatorId: string;
     creatorUsername: string;
-    isJoined?: boolean;
 }
 
 export interface ChatMessage {

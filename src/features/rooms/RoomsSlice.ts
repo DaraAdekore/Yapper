@@ -228,20 +228,18 @@ const roomsSlice = createSlice({
             longitude: number;
             creatorId: string;
             creatorUsername: string;
-            isJoined: boolean;
         }>) => {
             const newRoom = {
                 ...action.payload,
+                isJoined: true,  // Creator is automatically joined
                 unreadCount: 0,
-                isNew: true,
-                messages: []
+                messages: [],
+                isNew: true     // Mark as new
             };
-            state.rooms.push(newRoom);
             
-            // Only set as active room if user is joined
-            if (action.payload.isJoined) {
-                state.activeRoomId = action.payload.id;
-            }
+            state.rooms.push(newRoom);
+            state.filteredRooms.push(newRoom);  // Add to filtered rooms too
+            state.activeRoomId = action.payload.id;  // Set as active room
         },
         clearNewRoomFlag: (state, action: PayloadAction<UUID>) => {
             const room = state.rooms.find(r => r.id === action.payload);
