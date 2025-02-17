@@ -273,16 +273,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
                   >
-                    <div className="message-bubble">
+                    {message.userId !== userId && (
                       <span className="message-username">{message.username || 'Unknown User'}</span>
-                      <span className="message-content">{message.text}</span>
-                      <span className="message-timestamp">
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
+                    )}
+                    <div className="message-bubble">
+                      {message.text}
                     </div>
+                    <span className="message-timestamp">
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
                   </div>
                 ))}
               </div>
