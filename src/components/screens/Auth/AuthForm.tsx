@@ -60,6 +60,11 @@ export default function AuthForm() {
           (error) => {
             console.error("Error getting location:", error);
             setError("Please enable location services to use this app.");
+          },
+          { 
+            maximumAge: 0,  // Force fresh location
+            enableHighAccuracy: true,
+            timeout: 5000
           }
         );
       } else {
@@ -81,68 +86,74 @@ export default function AuthForm() {
     setStatus("Creating account...");
 
     if (!username.trim()) {
-      setError("Please enter your username");
-      setIsLoading(false);
-      return;
+        setError("Please enter your username");
+        setIsLoading(false);
+        return;
     }
 
     try {
-      let latitude: number | null = null;
-      let longitude: number | null = null;
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          latitude = position.coords.latitude;
-          longitude = position.coords.longitude;
-          console.log("Location access granted");
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setError("Please enable location services to use this app.");
+        // Get location first
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+                position => resolve(position),
+                error => reject(error),
+                { 
+                    maximumAge: 0,  // Force fresh location
+                    enableHighAccuracy: true,
+                    timeout: 5000
+                }
+            );
+        });
+
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        console.log({
+            email,
+            password,
+            username: username.trim(),
+            latitude,
+            longitude,
+        });
+
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                email,
+                password,
+                username: username.trim(),
+                latitude,
+                longitude,
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            localStorage.setItem("user", JSON.stringify(data));
+            dispatch(setUser({
+                ...data,
+                token: true,
+            }));
+            console.log("Registration successful");
+        } else {
+            setError(data.error || "Registration failed. Please try again.");
         }
-      );
-      console.log({
-        email,
-        password,
-        username: username.trim(),
-        latitude,
-        longitude,
-      });
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          username: username.trim(),
-          latitude,
-          longitude,
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("user", JSON.stringify(data));
-        dispatch(
-          setUser({
-            ...data,
-            token: true,
-          })
-        );
-        console.log("Registration successful");
-      } else {
-        setError(data.error || "Registration failed. Please try again.");
-      }
     } catch (err) {
-      console.error("Error during registration:", err);
-      setError("Registration failed. Please try again.");
+        if (err instanceof GeolocationPositionError) {
+            setError("Location access is required. Please enable location services and try again.");
+        } else {
+            console.error("Error during registration:", err);
+            setError("Registration failed. Please try again.");
+        }
     } finally {
-      setIsLoading(false);
-      setStatus("");
+        setIsLoading(false);
+        setStatus("");
     }
   };
 
