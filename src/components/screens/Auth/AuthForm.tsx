@@ -109,17 +109,18 @@ export default function AuthForm() {
       });
       const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
         method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({
           email,
           password,
           username: username.trim(),
           latitude,
           longitude,
-        }),
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        })
       });
 
       const data = await response.json();
