@@ -140,27 +140,23 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   };
 
   const groupMessagesByDate = (messages: any[]) => {
-    const groups = messages.reduce((groups: MessageGroup[], message) => {
+    // First, sort all messages by timestamp
+    const sortedMessages = [...messages].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    return sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
       
       if (existingGroup) {
         existingGroup.messages.push(message);
-        // Sort messages within group by timestamp
-        existingGroup.messages.sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
       } else {
         groups.push({ date, messages: [message] });
       }
       
       return groups;
     }, []);
-
-    // Sort groups by date (oldest first)
-    return groups.sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
   };
 
   const getMessageDate = (dateStr: string) => {

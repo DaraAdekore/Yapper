@@ -29,31 +29,7 @@ const MainApp: React.FC = () => {
             {!showMiniMainMenu && (
                 <button 
                     onClick={() => setShowMiniMainMenu(true)}
-                    style={{
-                        position: 'fixed',
-                        left: '20px',
-                        top: '80px',
-                        padding: '10px 20px',
-                        background: 'rgba(0, 120, 255, 0.9)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '25px',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                        transition: 'all 0.2s ease',
-                        backdropFilter: 'blur(5px)',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        zIndex: 9999
-                    }}
-                    onMouseEnter={e => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
-                    }}
+                    className="joined-rooms-button"
                 >
                     Joined Rooms
                 </button>
