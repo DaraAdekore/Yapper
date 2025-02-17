@@ -62,12 +62,5 @@
     "@types/react-redux": "^7.1.34",
     "@types/styled-components": "^5.1.34"
   },
-  "options": {
-    "allowedHosts": [
-      "localhost",
-      ".localhost",
-      "https://yapper-2d1p.onrender.com/"
-    ]
-  },
-  "proxy": "https://yapper-backend-pomo.onrender.com/3312"
+  "proxy": "https://yapper-backend-pomo.onrender.com"
 }
