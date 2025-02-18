@@ -150,7 +150,9 @@ const roomsSlice = createSlice({
                     room.lastActivity = action.payload.lastActivity;
                 }
                 if (action.payload.messages) {
-                    room.messages = action.payload.messages;
+                    room.messages = [...action.payload.messages].sort((a, b) => 
+                        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    );
                 }
             }
         },
@@ -211,13 +213,11 @@ const roomsSlice = createSlice({
                 if (!room.messages) {
                     room.messages = [];
                 }
-                // Check for duplicate messages
-                const isDuplicate = room.messages.some(m => m.id === action.payload.message.id);
-                if (!isDuplicate) {
-                    room.messages.push(action.payload.message);
-                }
+                // Add new message and sort
+                room.messages = [...room.messages, action.payload.message].sort((a, b) =>
+                    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                );
                 
-                // Only increment unread if it's not the active room
                 if (state.activeRoomId !== room.id) {
                     room.unreadCount = (room.unreadCount || 0) + 1;
                 }

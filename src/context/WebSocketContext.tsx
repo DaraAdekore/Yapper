@@ -42,13 +42,18 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				if (message.message) {
 					const room = rooms.find(r => r.id === message.message.room_id);
 					if (room && room.messages) {
-						const updatedMessages = [...room.messages].filter(m => 
+						// Get all messages and sort them
+						const allMessages = [...room.messages];
+						
+						// Remove any optimistic version of this message
+						const filteredMessages = allMessages.filter(m => 
 							!(m.userId === message.message.user_id && 
 								m.text === message.message.content &&
 								new Date(m.timestamp).getTime() > Date.now() - 5000)
 						);
 						
-						updatedMessages.push({
+						// Add new message
+						filteredMessages.push({
 							id: message.message.id,
 							text: message.message.content,
 							userId: message.message.user_id,
@@ -56,9 +61,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 							timestamp: message.message.timestamp
 						});
 
+						// Sort messages by timestamp
+						const sortedMessages = filteredMessages.sort((a, b) => 
+							new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+						);
+
 						dispatch(updateRoom({
 							id: room.id,
-							messages: updatedMessages
+							messages: sortedMessages
 						}));
 					}
 				}
