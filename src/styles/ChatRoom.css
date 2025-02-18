@@ -10,7 +10,6 @@
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
-  z-index: 1001;  /* Chat should be above most elements but below navbar */
 }
 
 .chat-room.open {
@@ -46,103 +45,61 @@
   padding: 15px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 180px);
-  background: #1a1a1a;
-  scroll-behavior: smooth;
+  justify-content: flex-end; /* This ensures messages start from bottom */
 }
 
 .message {
   display: flex;
   flex-direction: column;
   margin-bottom: 12px;
-  max-width: 80%;
 }
 
-.message-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-  font-size: 0.8rem;
-  padding: 0 4px;
+.message-bubble {
+  max-width: 70%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  word-break: break-word;
 }
 
 .message-username {
-  font-weight: 500;
-  opacity: 0.9;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  opacity: 0.8;
 }
 
-.message-timestamp {
-  opacity: 0.6;
-  font-size: 0.7rem;
-}
-
-/* Own messages (right side) */
 .own-message {
   align-self: flex-end;
 }
 
-.own-message .message-header {
-  justify-content: flex-end;
+.own-message .message-bubble {
+  background-color: #ff007f;
+  color: white;
+  border-bottom-right-radius: 5px;
 }
 
 .own-message .message-username {
-  color: #ff007f;
-  order: 2;
-}
-
-.own-message .message-bubble {
-  background: #ff007f;
-  color: white;
-  border-radius: 18px 18px 4px 18px;
   align-self: flex-end;
+  color: #ff007f;
 }
 
-/* Other messages (left side) */
 .other-message {
   align-self: flex-start;
 }
 
-.other-message .message-username {
-  color: #4a9eff;
-}
-
 .other-message .message-bubble {
-  background: #2a2a2a;
+  background-color: #333;
   color: white;
-  border-radius: 18px 18px 18px 4px;
-  align-self: flex-start;
+  border-bottom-left-radius: 5px;
 }
 
-.message-bubble {
-  padding: 10px 15px;
-  word-break: break-word;
-  max-width: fit-content;
+.other-message .message-username {
+  color: #999;
 }
 
-/* Date separator */
-.date-separator {
-  text-align: center;
-  margin: 20px 0;
-  position: relative;
-}
-
-.date-separator span {
-  background: #1a1a1a;
-  padding: 0 10px;
-  color: #666;
-  font-size: 0.8rem;
-}
-
-.date-separator::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: #333;
-  z-index: -1;
+.message-timestamp {
+  font-size: 0.7rem;
+  margin-top: 4px;
+  opacity: 0.6;
 }
 
 .message-input-container {
@@ -181,49 +138,16 @@
   background: #ff4da6;
 }
 
-.leave-button {
-  padding: 8px 16px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-right: 10px;
-  transition: background 0.2s;
-}
-
-.leave-button:hover {
-  background: #c82333;
-}
-
-/* Mobile adjustments */
+/* Mobile styles */
 @media (max-width: 768px) {
   .chat-room {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
+    top: 0;
     width: 100%;
-    height: 80vh;
-    border-radius: 20px 20px 0 0;
-    transform: translateY(100%);
-  }
-
-  .chat-room.open {
-    transform: translateY(0);
-  }
-
-  .chat-header {
-    border-radius: 20px 20px 0 0;
+    height: 100vh;
   }
 
   .message-input-container {
     padding-bottom: calc(15px + env(safe-area-inset-bottom));
-  }
-
-  .messages-container {
-    height: calc(80vh - 120px); /* Adjust for mobile view */
   }
 }
 
@@ -239,17 +163,4 @@
 .messages-container::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 3px;
-}
-
-/* Ensure messages are ordered correctly */
-.message-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 20px;
-}
-
-/* Ensure the container scrolls to show new messages */
-.messages-container > div:last-child {
-  float: left;
-  clear: both;
 }

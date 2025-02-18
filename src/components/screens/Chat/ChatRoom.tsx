@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
+import { useSpring, animated, to } from "@react-spring/web";
 import { useWebSocket } from "../../../context/WebSocketContext";
 import "../../../styles/ChatRoom.css";
 import { useAppSelector } from "../../../store/hooks";
 import { updateRoom, clearUnread, clearNewRoomFlag } from "../../../features/rooms/RoomsSlice";
 import { UUID } from "crypto";
-import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageType, ChatMessage } from "../../../Types/Types";
 
 interface ChatRoomProps {
   onClose: () => void;
@@ -14,27 +13,81 @@ interface ChatRoomProps {
 
 interface MessageGroup {
   date: string;
-  messages: ChatMessage[];
+  messages: {
+    id: UUID;
+    text: string;
+    userId: UUID;
+    username?: string;
+    timestamp: any;
+  }[];
 }
+
+const AnimatedDiv = animated('div');
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const { sendChatMessage, leaveRoom } = useWebSocket();
   const dispatch = useDispatch();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [{ x, y }, api] = useSpring(() => ({ x: 35, y: 35 }));
+  const [dimensions, setDimensions] = useState({ width: 400, height: 600 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [newMessage, setNewMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [showChat, setShowChat] = useState(true);
-
+  
   const activeRoomId = useAppSelector((state) => state.rooms.activeRoomId);
   const activeRoom = useAppSelector((state) => state.rooms.rooms.find((room) => room.id === activeRoomId));
   const userId = useAppSelector((state) => state.user.userId);
 
   const isMember = activeRoom?.isJoined ?? false;
 
+  const handleMouseDown = (e: React.MouseEvent, type: 'drag' | 'resize') => {
+    if (type === 'drag') {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - x.get(), y: e.clientY - y.get() });
+    } else {
+      setIsResizing(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      api.start({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+        immediate: true
+      });
+    } else if (isResizing) {
+      const newWidth = Math.max(300, Math.min(800, dimensions.width + (e.clientX - dragStart.x)));
+      const newHeight = Math.max(400, Math.min(800, dimensions.height + (e.clientY - dragStart.y)));
+      setDimensions({ width: newWidth, height: newHeight });
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setIsResizing(false);
+  };
+
+  useEffect(() => {
+    if (isDragging || isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, isResizing]);
+
   const handleJoinRoom = async () => {
     if (!activeRoomId || !userId) return;
-
+    
     setIsLoading(true);
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/join`, {
@@ -44,14 +97,14 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         },
         body: JSON.stringify({ userId, roomId: activeRoomId }),
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to join room');
       }
-
+      
       const roomData = await response.json();
       dispatch(updateRoom(roomData));
-
+      
     } catch (error) {
       console.error('Error joining room:', error);
     } finally {
@@ -60,28 +113,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   };
 
   const handleSendMessage = () => {
+    console.log(!newMessage.trim(), !isMember, !activeRoomId, !userId);
     if (!newMessage.trim() || !isMember || !activeRoomId || !userId) return;
-
-    const messageId = uuidv4() as UUID;
-    const timestamp = new Date().toISOString();
-
-    // Add message optimistically to the local state
-    if (activeRoom) {
-        const optimisticMessage = {
-            id: messageId,
-            text: newMessage.trim(),
-            userId: userId,
-            username: 'You',
-            timestamp
-        };
-
-        dispatch(updateRoom({
-            id: activeRoom.id,
-            messages: [...(activeRoom.messages || []), optimisticMessage]
-        }));
-    }
-
-    // Send to server with same ID
     sendChatMessage(activeRoomId, newMessage.trim());
     setNewMessage("");
   };
@@ -106,34 +139,34 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     }
   };
 
-  const groupMessagesByDate = (messages: ChatMessage[]) => {
-    if (!messages || messages.length === 0) return [];
-    
-    // Just group by date
-    const groups = messages.reduce((groups: { [key: string]: ChatMessage[] }, message) => {
-        const date = new Date(message.timestamp).toLocaleDateString();
-        if (!groups[date]) {
-            groups[date] = [];
-        }
-        groups[date].push(message);
-        return groups;
-    }, {});
+  const groupMessagesByDate = (messages: any[]) => {
+    const groups = messages.reduce((groups: MessageGroup[], message) => {
+      const date = new Date(message.timestamp).toLocaleDateString();
+      const existingGroup = groups.find(group => group.date === date);
+      
+      if (existingGroup) {
+        existingGroup.messages.push(message);
+        // Sort messages within group by timestamp
+        existingGroup.messages.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+      } else {
+        groups.push({ date, messages: [message] });
+      }
+      
+      return groups;
+    }, []);
 
-    // Convert to array
-    return Object.entries(groups).map(([date, messages]) => ({
-        date,
-        messages
-    }));
+    // Sort groups by date (oldest first)
+    return groups.sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [activeRoom?.messages]); // Scroll when messages change
 
   const getMessageDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
-
+    
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     }
@@ -158,7 +191,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const handleLeaveRoom = async () => {
     if (!activeRoomId || !userId) return;
-
+    
     setIsLoading(true);
     try {
       await leaveRoom(activeRoomId, userId);
@@ -175,14 +208,24 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   }
 
   return (
-    <div className={`chat-room ${showChat ? 'open' : ''}`}>
-      <div className="chat-header">
+    <AnimatedDiv
+      className={`chat-room ${showChat ? 'open' : ''}`}
+      style={{
+        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
+        width: dimensions.width,
+        height: dimensions.height,
+      }}
+    >
+      <div 
+        className="chat-header"
+        onMouseDown={(e) => handleMouseDown(e, 'drag')}
+      >
         <div className="chat-header-content">
-          <h2>{activeRoom?.name}</h2>
+          <h2>{activeRoom.name}</h2>
         </div>
         <div className="chat-header-buttons">
           {isMember && (
-            <button
+            <button 
               className="leave-button"
               onClick={handleLeaveRoom}
               disabled={isLoading}
@@ -197,7 +240,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       {!isMember ? (
         <div className="join-prompt">
           <p>Join this room to start chatting!</p>
-          <button
+          <button 
             className="join-button"
             onClick={handleJoinRoom}
             disabled={isLoading}
@@ -215,7 +258,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
             )}
             {activeRoom.lastActivity && (
               <div className="activity-notification">
-                {activeRoom.lastActivity.type === 'join'
+                {activeRoom.lastActivity.type === 'join' 
                   ? `${activeRoom.lastActivity.username} joined the room`
                   : `${activeRoom.lastActivity.username} left the room`}
               </div>
@@ -226,24 +269,22 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                   <span>{getMessageDate(group.date)}</span>
                 </div>
                 {group.messages.map((message) => (
-                  <div
+                  <div 
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
                   >
-                    <div className="message-header">
-                      <span className="message-username">
-                        {message.userId === userId ? 'You' : message.username}
-                      </span>
-                      <span className="message-timestamp">
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
+                    {message.userId !== userId && (
+                      <span className="message-username">{message.username || 'Unknown User'}</span>
+                    )}
                     <div className="message-bubble">
                       {message.text}
                     </div>
+                    <span className="message-timestamp">
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -262,7 +303,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
               rows={1}
               maxLength={500}
             />
-            <button
+            <button 
               className="send-button"
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || !isMember}
@@ -272,7 +313,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
           </div>
         </>
       )}
-    </div>
+      <div 
+        className="resize-handle"
+        onMouseDown={(e) => handleMouseDown(e, 'resize')}
+      />
+    </AnimatedDiv>
   );
 };
 

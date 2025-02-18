@@ -51,8 +51,6 @@ export interface Message {
         room_id: UUID | undefined;
         content: string;
     }[];
-    id: UUID;
-    timestamp: string;
 }
 
 export enum MessageType {
@@ -95,26 +93,19 @@ export interface Room {
     id: UUID;
     name: string;
     isJoined: boolean;
+    messages?: Message[];
     unreadCount: number;
     isNew?: boolean;
     latitude: number;
     longitude: number;
     creatorId: string;
     creatorUsername: string;
-    lastActivity?: {
-        type: 'join' | 'leave';
-        username: string;
-        timestamp: string;
-    };
-    messages?: ChatMessage[];
 }
 
 export interface ChatMessage {
     id: UUID;
     text: string;
-    userId: UUID;
-    username: string;
-    timestamp: string;
+    userId: string;
 }
 
 export interface WebSocketMessage {

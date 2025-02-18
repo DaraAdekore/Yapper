@@ -9,7 +9,6 @@ import { useDispatch } from 'react-redux';
 import { setQueryFilter, setRadiusFilter } from '../../../features/rooms/RoomsSlice';
 import MiniMainMenu from '../../common/MiniMainMenu';
 import NavbarComponent from '../../common/Navbar';
-import '../../../styles/MainApp.css';
 
 const MainApp: React.FC = () => {
     const user = useAppSelector((state) => state.user);
@@ -27,18 +26,41 @@ const MainApp: React.FC = () => {
     return (
         <div className="main-app">
             <NavbarComponent />
-            <div className="main-content">
-                {!showMiniMainMenu && (
-                    <button 
-                        onClick={() => setShowMiniMainMenu(true)}
-                        className="joined-rooms-button"
-                    >
-                        Joined Rooms
-                    </button>
-                )}
-                <div style={{ position: 'relative' }}>
-                    <ApiProvider />
-                </div>
+            {!showMiniMainMenu && (
+                <button 
+                    onClick={() => setShowMiniMainMenu(true)}
+                    style={{
+                        position: 'fixed',
+                        left: '20px',
+                        top: '80px',
+                        padding: '10px 20px',
+                        background: 'rgba(0, 120, 255, 0.9)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '25px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                        transition: 'all 0.2s ease',
+                        backdropFilter: 'blur(5px)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        zIndex: 9999
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                    }}
+                >
+                    Joined Rooms
+                </button>
+            )}
+
+            <div style={{ position: 'relative' }}>
+                <ApiProvider />
             </div>
             
             {showMiniMainMenu && (
@@ -46,7 +68,7 @@ const MainApp: React.FC = () => {
                     position: 'fixed',
                     top: '80px',
                     left: '20px',
-                    zIndex: 1001
+                    zIndex: 10000
                 }}>
                     <MiniMainMenu onClose={() => setShowMiniMainMenu(false)} />
                 </div>

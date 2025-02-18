@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { UUID } from "crypto";
 import { haversine } from "../../components/Utilities/Utilities";
-import { createAction } from "@reduxjs/toolkit";
 
 interface Message {
     id: UUID;
@@ -112,23 +111,6 @@ function filterRooms(
     });
 }
 
-interface UpdateRoomPayload {
-  id: UUID;
-  isJoined?: boolean;
-  lastActivity?: {
-    type: 'join' | 'leave';
-    username: string;
-    timestamp: string;
-  };
-  messages?: {
-    id: UUID;
-    text: string;
-    userId: UUID;
-    username: string;
-    timestamp: string;
-  }[];
-}
-
 const roomsSlice = createSlice({
     name: "rooms",
     initialState,
@@ -140,7 +122,15 @@ const roomsSlice = createSlice({
                 isJoined: room.isJoined || false
             }));
         },
-        updateRoom: (state, action: PayloadAction<UpdateRoomPayload>) => {
+        updateRoom: (state, action: PayloadAction<{
+            id: UUID;
+            isJoined?: boolean;
+            lastActivity?: {
+                type: 'join' | 'leave';
+                username: string;
+                timestamp: string;
+            };
+        }>) => {
             const room = state.rooms.find(r => r.id === action.payload.id);
             if (room) {
                 if (action.payload.isJoined !== undefined) {
@@ -148,9 +138,6 @@ const roomsSlice = createSlice({
                 }
                 if (action.payload.lastActivity) {
                     room.lastActivity = action.payload.lastActivity;
-                }
-                if (action.payload.messages) {
-                    room.messages = action.payload.messages;
                 }
             }
         },
@@ -211,12 +198,13 @@ const roomsSlice = createSlice({
                 if (!room.messages) {
                     room.messages = [];
                 }
-                
-                // Only add if not a duplicate
-                if (!room.messages.some(m => m.id === action.payload.message.id)) {
+                // Check for duplicate messages
+                const isDuplicate = room.messages.some(m => m.id === action.payload.message.id);
+                if (!isDuplicate) {
                     room.messages.push(action.payload.message);
                 }
-
+                
+                // Only increment unread if it's not the active room
                 if (state.activeRoomId !== room.id) {
                     room.unreadCount = (room.unreadCount || 0) + 1;
                 }

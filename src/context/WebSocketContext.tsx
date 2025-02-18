@@ -4,24 +4,24 @@ import { MessageType, Message, WebSocketMessage } from '../Types/Types';
 import { updateRoom, addMessage, addRoom, incrementUnread, addNewRoom, setActiveRoom } from '../features/rooms/RoomsSlice';
 import { UUID } from 'crypto';
 import { stat } from 'fs';
+import { useAppSelector } from '../store/hooks';
 import { RootState } from '../store/store';
-import { v4 as uuidv4 } from 'uuid';
 
 // Define the context type
 interface WebSocketContextType {
 	sendMessage: (message: WebSocketMessage) => void;
 	sendChatMessage: (roomId: UUID, content: string) => void;
-	joinRoom: (roomId: string, userId: string) => Promise<{ error?: string }>;
+	joinRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
 	createRoom: (name: string, latitude: number, longitude: number) => void;
-	leaveRoom: (roomId: string, userId: string) => Promise<{ error?: string }>;
+	leaveRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
 }
 
 // Create context with default values
 export const WebSocketContext = createContext<WebSocketContextType>({
-	sendMessage: () => { },
-	sendChatMessage: () => { },
+	sendMessage: () => {},
+	sendChatMessage: () => {},
 	joinRoom: async () => ({ error: 'WebSocket not initialized' }),
-	createRoom: () => { },
+	createRoom: () => {},
 	leaveRoom: async () => ({ error: 'WebSocket not initialized' })
 });
 
@@ -30,7 +30,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	const dispatch = useDispatch();
 	const user = useSelector((state: RootState) => state.user);
 	const activeRoomId = useSelector((state: RootState) => state.rooms.activeRoomId);
-	const rooms = useSelector((state: RootState) => state.rooms.rooms);
 
 	// Add a ref to track sent message IDs
 	const sentMessageIds = useRef<Set<string>>(new Set());
@@ -41,28 +40,22 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
-					const room = rooms.find(r => r.id === message.message.room_id);
-					if (room) {
-						// Skip if this is a message we just sent (it's already in the state)
-						const isRecentMessage = room.messages?.some(m => 
-							m.text === message.message.content && 
-							m.userId === message.message.user_id &&
-							new Date(m.timestamp).getTime() > Date.now() - 5000
-						);
-
-						if (!isRecentMessage) {
-							dispatch(addMessage({
-								roomId: room.id,
-								message: {
-									id: message.message.id,
-									text: message.message.content,
-									userId: message.message.user_id,
-									username: message.message.username,
-									timestamp: message.message.timestamp
-								}
-							}));
-						}
+					// Skip if we've already optimistically added this message
+					if (sentMessageIds.current.has(message.message.content)) {
+						sentMessageIds.current.delete(message.message.content);
+						return;
 					}
+					
+					dispatch(addMessage({
+						roomId: message.message.room_id,
+						message: {
+							id: message.message.id,
+							text: message.message.content,
+							userId: message.message.user_id,
+							username: message.message.username,
+							timestamp: message.message.timestamp
+						}
+					}));
 				}
 				break;
 
@@ -138,33 +131,34 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 	const sendChatMessage = (roomId: UUID, content: string) => {
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
-			const messageId = uuidv4() as UUID;
-			const timestamp = new Date().toISOString();
-
-			// Add optimistically first
-			dispatch(addMessage({
-				roomId,
-				message: {
-					id: messageId,
-					text: content,
-					userId: user.userId,
-					username: user.username || 'You',
-					timestamp
-				}
-			}));
-
-			// Then send to server
-			ws.current.send(JSON.stringify({
+			// Track this message content
+			sentMessageIds.current.add(content);
+			
+			const message: Message = {
 				type: MessageType.SEND_MESSAGE,
 				roomId,
 				userId: user.userId,
-				content,
-				messageId
+				content
+			};
+			console.log('Sending chat message:', message);
+			
+			// Optimistically add message to UI with proper UUID type
+			dispatch(addMessage({
+				roomId,
+				message: {
+					id: crypto.randomUUID() as UUID,  // Cast to UUID type
+					text: content,
+					userId: user.userId,
+					username: user.username || 'You',
+					timestamp: new Date().toISOString()
+				}
 			}));
+			
+			ws.current.send(JSON.stringify(message));
 		}
 	};
 
-	const joinRoom = (roomId: string, userId: string): Promise<{ error?: string }> => {
+	const joinRoom = (roomId: string, userId: string): Promise<{error?: string}> => {
 		return new Promise((resolve) => {
 			if (ws.current?.readyState === WebSocket.OPEN) {
 				ws.current.send(JSON.stringify({
@@ -191,7 +185,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		}
 	};
 
-	const leaveRoom = (roomId: string, userId: string): Promise<{ error?: string }> => {
+	const leaveRoom = (roomId: string, userId: string): Promise<{error?: string}> => {
 		return new Promise((resolve) => {
 			if (ws.current?.readyState === WebSocket.OPEN) {
 				ws.current.send(JSON.stringify({
