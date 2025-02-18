@@ -112,9 +112,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const groupMessagesByDate = (messages: any[]) => {
     if (!messages || messages.length === 0) return [];
-
+    
     // Sort all messages by timestamp (oldest first)
-    const sortedMessages = [...messages].sort((a, b) =>
+    const sortedMessages = [...messages].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
@@ -122,24 +122,23 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     const groups = sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
-
+      
       if (existingGroup) {
         existingGroup.messages.push(message);
       } else {
         groups.push({ date, messages: [message] });
       }
-
+      
       return groups;
     }, []);
 
-    // Sort groups by date (oldest first)
-    return groups.sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    return groups;
   };
+
   useEffect(() => {
     scrollToBottom();
   }, [activeRoom?.messages]); // Scroll when messages change
+
   const getMessageDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -235,9 +234,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                 <div className="date-separator">
                   <span>{getMessageDate(group.date)}</span>
                 </div>
-                {[...group.messages].sort((a, b) =>
-                  new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-                ).map((message) => (
+                {[...group.messages].reverse().map((message) => (
                   <div
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
