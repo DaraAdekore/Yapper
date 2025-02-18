@@ -46,7 +46,7 @@
   padding: 15px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 180px); /* Account for header and input */
+  height: calc(100vh - 180px);
   background: #1a1a1a;
 }
 
@@ -78,23 +78,23 @@
 
 /* Own messages (right side) */
 .own-message {
-  align-self: flex-end;
+  align-self: flex-start;
 }
 
 .own-message .message-header {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .own-message .message-username {
   color: #ff007f;
-  order: 2;
+  order: 0;
 }
 
 .own-message .message-bubble {
   background: #ff007f;
   color: white;
-  border-radius: 18px 18px 4px 18px;
-  align-self: flex-end;
+  border-radius: 18px 18px 18px 4px;
+  align-self: flex-start;
 }
 
 /* Other messages (left side) */
@@ -238,4 +238,10 @@
 .messages-container::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 3px;
+}
+
+/* Ensure messages are ordered correctly */
+.message-group {
+  display: flex;
+  flex-direction: column;
 }
