@@ -150,10 +150,7 @@ const roomsSlice = createSlice({
                     room.lastActivity = action.payload.lastActivity;
                 }
                 if (action.payload.messages) {
-                    // Sort messages by date and time when loading
-                    room.messages = action.payload.messages.sort((a, b) => 
-                        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-                    );
+                    room.messages = action.payload.messages; // Trust server order
                 }
             }
         },
