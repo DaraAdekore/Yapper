@@ -6,7 +6,7 @@ import { useAppSelector } from "../../../store/hooks";
 import { updateRoom, clearUnread, clearNewRoomFlag } from "../../../features/rooms/RoomsSlice";
 import { UUID } from "crypto";
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageType } from "../../../Types/Types";
+import { Message, MessageType, ChatMessage } from "../../../Types/Types";
 
 interface ChatRoomProps {
   onClose: () => void;
@@ -14,13 +14,7 @@ interface ChatRoomProps {
 
 interface MessageGroup {
   date: string;
-  messages: {
-    id: UUID;
-    text: string;
-    userId: UUID;
-    username?: string;
-    timestamp: string;
-  }[];
+  messages: ChatMessage[];
 }
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
@@ -112,23 +106,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     }
   };
 
-  const groupMessagesByDate = (messages: {
-    id: UUID;
-    text: string;
-    userId: UUID;
-    username?: string;
-    timestamp: string;
-  }[]) => {
+  const groupMessagesByDate = (messages: ChatMessage[]) => {
     if (!messages || messages.length === 0) return [];
     
-    // Group messages by date
-    const groups = messages.reduce((groups: { [key: string]: {
-      id: UUID;
-      text: string;
-      userId: UUID;
-      username?: string;
-      timestamp: string;
-    }[] }, message) => {
+    // Group messages by date, maintaining original order
+    const groups = messages.reduce((groups: { [key: string]: ChatMessage[] }, message) => {
         const date = new Date(message.timestamp).toLocaleDateString();
         if (!groups[date]) {
             groups[date] = [];
@@ -137,15 +119,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         return groups;
     }, {});
 
-    // Convert to array and sort dates in ascending order (oldest to newest)
+    // Convert to array and maintain chronological order
     return Object.entries(groups)
         .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
         .map(([date, messages]) => ({
             date,
-            // Sort messages within each date in ascending order (oldest to newest)
-            messages: messages.sort((a, b) => 
-                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-            )
+            messages // Keep messages in their original order
         }));
   };
 
