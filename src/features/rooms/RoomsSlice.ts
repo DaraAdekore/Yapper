@@ -214,7 +214,11 @@ const roomsSlice = createSlice({
                 
                 // Only add if not a duplicate
                 if (!room.messages.some(m => m.id === action.payload.message.id)) {
-                    room.messages.push(action.payload.message);
+                    // Add new message and sort by timestamp
+                    const allMessages = [...room.messages, action.payload.message];
+                    room.messages = allMessages.sort((a, b) => 
+                        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    );
                 }
 
                 if (state.activeRoomId !== room.id) {
