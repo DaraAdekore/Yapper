@@ -41,20 +41,22 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
-					const room = rooms.find(r => r.id === message.message.room_id);
-					if (room && room.messages && message.message.user_id !== user.userId) {
-						const updatedMessages = [...room.messages];
-						updatedMessages.push({
-							id: message.message.id,
-							text: message.message.content,
-							userId: message.message.user_id,
-							username: message.message.username,
-							timestamp: message.message.timestamp
-						});
+					// Skip messages from current user (already added optimistically)
+					if (message.message.user_id === user.userId) {
+						return;
+					}
 
-						dispatch(updateRoom({
-							id: room.id,
-							messages: updatedMessages
+					const room = rooms.find(r => r.id === message.message.room_id);
+					if (room) {
+						dispatch(addMessage({
+							roomId: room.id,
+							message: {
+								id: message.message.id,
+								text: message.message.content,
+								userId: message.message.user_id,
+								username: message.message.username,
+								timestamp: message.message.timestamp
+							}
 						}));
 					}
 				}
@@ -134,7 +136,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
 			const messageId = uuidv4() as UUID;
 			
-			// Add message optimistically first
+			// Add optimistically with guaranteed unique ID
 			dispatch(addMessage({
 				roomId,
 				message: {
@@ -146,15 +148,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				}
 			}));
 
-			// Then send to server
-			const message: Message = {
+			ws.current.send(JSON.stringify({
 				type: MessageType.SEND_MESSAGE,
 				roomId,
 				userId: user.userId,
 				content,
-				messageId
-			};
-			ws.current.send(JSON.stringify(message));
+				messageId // Send same ID to server
+			}));
 		}
 	};
 
