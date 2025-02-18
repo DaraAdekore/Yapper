@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { UUID } from "crypto";
 import { haversine } from "../../components/Utilities/Utilities";
+import { createAction } from "@reduxjs/toolkit";
 
 interface Message {
     id: UUID;
@@ -111,6 +112,23 @@ function filterRooms(
     });
 }
 
+interface UpdateRoomPayload {
+  id: UUID;
+  isJoined?: boolean;
+  lastActivity?: {
+    type: 'join' | 'leave';
+    username: string;
+    timestamp: string;
+  };
+  messages?: {
+    id: UUID;
+    text: string;
+    userId: UUID;
+    username: string;
+    timestamp: string;
+  }[];
+}
+
 const roomsSlice = createSlice({
     name: "rooms",
     initialState,
@@ -122,15 +140,7 @@ const roomsSlice = createSlice({
                 isJoined: room.isJoined || false
             }));
         },
-        updateRoom: (state, action: PayloadAction<{
-            id: UUID;
-            isJoined?: boolean;
-            lastActivity?: {
-                type: 'join' | 'leave';
-                username: string;
-                timestamp: string;
-            };
-        }>) => {
+        updateRoom: (state, action: PayloadAction<UpdateRoomPayload>) => {
             const room = state.rooms.find(r => r.id === action.payload.id);
             if (room) {
                 if (action.payload.isJoined !== undefined) {
@@ -138,6 +148,9 @@ const roomsSlice = createSlice({
                 }
                 if (action.payload.lastActivity) {
                     room.lastActivity = action.payload.lastActivity;
+                }
+                if (action.payload.messages) {
+                    room.messages = action.payload.messages;
                 }
             }
         },

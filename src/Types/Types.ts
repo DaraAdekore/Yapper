@@ -93,13 +93,24 @@ export interface Room {
     id: UUID;
     name: string;
     isJoined: boolean;
-    messages?: Message[];
     unreadCount: number;
     isNew?: boolean;
     latitude: number;
     longitude: number;
     creatorId: string;
     creatorUsername: string;
+    lastActivity?: {
+        type: 'join' | 'leave';
+        username: string;
+        timestamp: string;
+    };
+    messages?: {
+        id: UUID;
+        text: string;
+        userId: UUID;
+        username: string;
+        timestamp: string;
+    }[];
 }
 
 export interface ChatMessage {

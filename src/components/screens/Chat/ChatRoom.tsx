@@ -5,6 +5,7 @@ import "../../../styles/ChatRoom.css";
 import { useAppSelector } from "../../../store/hooks";
 import { updateRoom, clearUnread, clearNewRoomFlag } from "../../../features/rooms/RoomsSlice";
 import { UUID } from "crypto";
+import { v4 as uuidv4 } from 'uuid';
 
 interface ChatRoomProps {
   onClose: () => void;
@@ -64,8 +65,27 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   };
 
   const handleSendMessage = () => {
-    console.log(!newMessage.trim(), !isMember, !activeRoomId, !userId);
     if (!newMessage.trim() || !isMember || !activeRoomId || !userId) return;
+    
+    // Create the optimistic message with proper UUID type
+    const optimisticMessage = {
+      id: uuidv4() as UUID, // Cast the uuid to UUID type
+      text: newMessage.trim(),
+      userId: userId,
+      username: 'You',
+      timestamp: new Date().toISOString()
+    };
+
+    // Add message optimistically to the local state
+    if (activeRoom) {
+      const updatedMessages = [...(activeRoom.messages || []), optimisticMessage];
+      dispatch(updateRoom({
+        id: activeRoom.id,
+        messages: updatedMessages
+      }));
+    }
+
+    // Send to server
     sendChatMessage(activeRoomId, newMessage.trim());
     setNewMessage("");
   };
@@ -93,22 +113,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const groupMessagesByDate = (messages: any[]) => {
     if (!messages || messages.length === 0) return [];
     
-    // First sort all messages by timestamp
+    // Sort all messages by timestamp, newest last
     const sortedMessages = [...messages].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Group messages by date
+    // Group by date
     const groups = sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
       
       if (existingGroup) {
         existingGroup.messages.push(message);
-        // Sort messages within the group by timestamp
-        existingGroup.messages.sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
       } else {
         groups.push({ date, messages: [message] });
       }
@@ -116,10 +132,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       return groups;
     }, []);
 
-    // Sort groups by date (oldest to newest)
-    return groups.sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    return groups;
   };
 
   const getMessageDate = (dateStr: string) => {

@@ -40,22 +40,27 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
-					// Skip if we've already optimistically added this message
-					if (sentMessageIds.current.has(message.message.content)) {
-						sentMessageIds.current.delete(message.message.content);
-						return;
-					}
-					
-					dispatch(addMessage({
-						roomId: message.message.room_id,
-						message: {
+					const room = useAppSelector(state => state.rooms.rooms.find(r => r.id === message.message.room_id));
+					if (room && room.messages) {  // Check if messages exists
+						const updatedMessages = [...room.messages].filter(m => 
+							!(m.userId === message.message.user_id && 
+								m.text === message.message.content &&
+								new Date(m.timestamp).getTime() > Date.now() - 5000)
+						);
+						
+						updatedMessages.push({
 							id: message.message.id,
 							text: message.message.content,
 							userId: message.message.user_id,
 							username: message.message.username,
 							timestamp: message.message.timestamp
-						}
-					}));
+						});
+
+						dispatch(updateRoom({
+							...room,
+							messages: updatedMessages
+						}));
+					}
 				}
 				break;
 
