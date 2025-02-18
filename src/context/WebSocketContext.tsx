@@ -40,12 +40,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
-				if (message.message) {
-					// Skip messages from current user (already added optimistically)
-					if (message.message.user_id === user.userId) {
-						return;
-					}
-
+				if (message.message && message.message.user_id !== user.userId) {
 					const room = rooms.find(r => r.id === message.message.room_id);
 					if (room) {
 						dispatch(addMessage({
@@ -135,8 +130,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	const sendChatMessage = (roomId: UUID, content: string) => {
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
 			const messageId = uuidv4() as UUID;
+			const timestamp = new Date().toISOString();
 			
-			// Add optimistically with guaranteed unique ID
+			// Add message optimistically
 			dispatch(addMessage({
 				roomId,
 				message: {
@@ -144,16 +140,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 					text: content,
 					userId: user.userId,
 					username: user.username || 'You',
-					timestamp: new Date().toISOString()
+					timestamp
 				}
 			}));
 
+			// Send to server
 			ws.current.send(JSON.stringify({
 				type: MessageType.SEND_MESSAGE,
 				roomId,
 				userId: user.userId,
 				content,
-				messageId // Send same ID to server
+				messageId
 			}));
 		}
 	};

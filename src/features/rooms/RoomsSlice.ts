@@ -150,12 +150,8 @@ const roomsSlice = createSlice({
                     room.lastActivity = action.payload.lastActivity;
                 }
                 if (action.payload.messages) {
-                    // Remove duplicates using Set with message ID as key
-                    const uniqueMessages = Array.from(
-                        new Map(action.payload.messages.map(m => [m.id, m])).values()
-                    );
-                    // Sort by timestamp, newest last
-                    room.messages = uniqueMessages.sort((a, b) => 
+                    // Sort messages by date and time when loading
+                    room.messages = action.payload.messages.sort((a, b) => 
                         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
                     );
                 }
@@ -218,14 +214,15 @@ const roomsSlice = createSlice({
                 if (!room.messages) {
                     room.messages = [];
                 }
-
-                // Don't add if message with same ID already exists
+                
+                // Only add if not a duplicate
                 if (!room.messages.some(m => m.id === action.payload.message.id)) {
+                    // Simply append the new message at the end
                     room.messages.push(action.payload.message);
-                    // Sort messages by timestamp, ensuring newest messages are last
-                    room.messages.sort((a, b) => 
-                        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-                    );
+                }
+
+                if (state.activeRoomId !== room.id) {
+                    room.unreadCount = (room.unreadCount || 0) + 1;
                 }
             }
         },
