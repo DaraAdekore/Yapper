@@ -48,6 +48,7 @@
   flex-direction: column;
   height: calc(100vh - 180px);
   background: #1a1a1a;
+  scroll-behavior: smooth;
 }
 
 .message {
@@ -244,4 +245,11 @@
 .message-group {
   display: flex;
   flex-direction: column;
+  margin-bottom: 20px;
+}
+
+/* Ensure the container scrolls to show new messages */
+.messages-container > div:last-child {
+  float: left;
+  clear: both;
 }
