@@ -40,7 +40,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
-				if (message.message && message.message.user_id !== user.userId) {
+				if (message.message) {
+					// Skip our own messages since we handle them optimistically
+					if (message.message.user_id === user.userId) {
+						return;
+					}
+
 					const room = rooms.find(r => r.id === message.message.room_id);
 					if (room) {
 						dispatch(addMessage({
@@ -131,8 +136,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
 			const messageId = uuidv4() as UUID;
 			const timestamp = new Date().toISOString();
-			
-			// Add message optimistically
+
+			// Send to server first
+			ws.current.send(JSON.stringify({
+				type: MessageType.SEND_MESSAGE,
+				roomId,
+				userId: user.userId,
+				content,
+				messageId
+			}));
+
+			// Then add optimistically
 			dispatch(addMessage({
 				roomId,
 				message: {
@@ -142,15 +156,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 					username: user.username || 'You',
 					timestamp
 				}
-			}));
-
-			// Send to server
-			ws.current.send(JSON.stringify({
-				type: MessageType.SEND_MESSAGE,
-				roomId,
-				userId: user.userId,
-				content,
-				messageId
 			}));
 		}
 	};

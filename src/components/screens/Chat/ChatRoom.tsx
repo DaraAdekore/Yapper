@@ -119,7 +119,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         return groups;
     }, {});
 
-    // Convert to array, maintain date order from server
+    // Convert to array, maintain server order
     return Object.entries(groups).map(([date, messages]) => ({
         date,
         messages // Keep original message order
