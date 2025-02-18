@@ -67,9 +67,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !isMember || !activeRoomId || !userId) return;
 
-    // Create the optimistic message with proper UUID type
+    // Create the optimistic message
     const optimisticMessage = {
-      id: uuidv4() as UUID, // Cast the uuid to UUID type
+      id: uuidv4() as UUID,
       text: newMessage.trim(),
       userId: userId,
       username: 'You',
@@ -78,10 +78,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
     // Add message optimistically to the local state
     if (activeRoom) {
-      const updatedMessages = [...(activeRoom.messages || []), optimisticMessage];
+      // Ensure messages array exists and add new message at the end
+      const currentMessages = activeRoom.messages || [];
       dispatch(updateRoom({
         id: activeRoom.id,
-        messages: updatedMessages
+        messages: [...currentMessages, optimisticMessage] // Add to end without sorting
       }));
     }
 
@@ -113,7 +114,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const groupMessagesByDate = (messages: any[]) => {
     if (!messages || messages.length === 0) return [];
     
-    // Group by date first
+    // Group messages by date, maintaining original order
     const dateGroups = messages.reduce((groups: { [key: string]: any[] }, message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       if (!groups[date]) {
@@ -123,15 +124,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       return groups;
     }, {});
 
-    // Convert to array and sort dates oldest to newest
+    // Convert to array and maintain chronological order
     return Object.entries(dateGroups)
       .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
       .map(([date, messages]) => ({
         date,
-        // Sort messages within each date oldest to newest
-        messages: messages.sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        )
+        messages // Keep messages in their original order
       }));
   };
 
