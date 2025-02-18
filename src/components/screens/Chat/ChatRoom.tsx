@@ -30,7 +30,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const [newMessage, setNewMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [showChat, setShowChat] = useState(true);
-  
+
   const activeRoomId = useAppSelector((state) => state.rooms.activeRoomId);
   const activeRoom = useAppSelector((state) => state.rooms.rooms.find((room) => room.id === activeRoomId));
   const userId = useAppSelector((state) => state.user.userId);
@@ -39,7 +39,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const handleJoinRoom = async () => {
     if (!activeRoomId || !userId) return;
-    
+
     setIsLoading(true);
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/join`, {
@@ -49,14 +49,14 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         },
         body: JSON.stringify({ userId, roomId: activeRoomId }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to join room');
       }
-      
+
       const roomData = await response.json();
       dispatch(updateRoom(roomData));
-      
+
     } catch (error) {
       console.error('Error joining room:', error);
     } finally {
@@ -66,7 +66,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !isMember || !activeRoomId || !userId) return;
-    
+
     // Create the optimistic message with proper UUID type
     const optimisticMessage = {
       id: uuidv4() as UUID, // Cast the uuid to UUID type
@@ -112,9 +112,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const groupMessagesByDate = (messages: any[]) => {
     if (!messages || messages.length === 0) return [];
-    
-    // Sort all messages by timestamp
-    const sortedMessages = [...messages].sort((a, b) => 
+
+    // Sort all messages by timestamp (oldest first)
+    const sortedMessages = [...messages].sort((a, b) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
@@ -122,26 +122,28 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     const groups = sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
-      
+
       if (existingGroup) {
         existingGroup.messages.push(message);
       } else {
         groups.push({ date, messages: [message] });
       }
-      
+
       return groups;
     }, []);
 
-    // Sort groups by date (oldest to newest)
-    return groups.sort((a, b) => 
+    // Sort groups by date (oldest first)
+    return groups.sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
   };
-
+  useEffect(() => {
+    scrollToBottom();
+  }, [activeRoom?.messages]); // Scroll when messages change
   const getMessageDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
-    
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     }
@@ -166,7 +168,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const handleLeaveRoom = async () => {
     if (!activeRoomId || !userId) return;
-    
+
     setIsLoading(true);
     try {
       await leaveRoom(activeRoomId, userId);
@@ -190,7 +192,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         </div>
         <div className="chat-header-buttons">
           {isMember && (
-            <button 
+            <button
               className="leave-button"
               onClick={handleLeaveRoom}
               disabled={isLoading}
@@ -205,7 +207,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       {!isMember ? (
         <div className="join-prompt">
           <p>Join this room to start chatting!</p>
-          <button 
+          <button
             className="join-button"
             onClick={handleJoinRoom}
             disabled={isLoading}
@@ -223,7 +225,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
             )}
             {activeRoom.lastActivity && (
               <div className="activity-notification">
-                {activeRoom.lastActivity.type === 'join' 
+                {activeRoom.lastActivity.type === 'join'
                   ? `${activeRoom.lastActivity.username} joined the room`
                   : `${activeRoom.lastActivity.username} left the room`}
               </div>
@@ -233,10 +235,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                 <div className="date-separator">
                   <span>{getMessageDate(group.date)}</span>
                 </div>
-                {[...group.messages].sort((a, b) => 
+                {[...group.messages].sort((a, b) =>
                   new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
                 ).map((message) => (
-                  <div 
+                  <div
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
                   >
@@ -272,7 +274,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
               rows={1}
               maxLength={500}
             />
-            <button 
+            <button
               className="send-button"
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || !isMember}

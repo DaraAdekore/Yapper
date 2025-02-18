@@ -10,17 +10,17 @@ import { RootState } from '../store/store';
 interface WebSocketContextType {
 	sendMessage: (message: WebSocketMessage) => void;
 	sendChatMessage: (roomId: UUID, content: string) => void;
-	joinRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
+	joinRoom: (roomId: string, userId: string) => Promise<{ error?: string }>;
 	createRoom: (name: string, latitude: number, longitude: number) => void;
-	leaveRoom: (roomId: string, userId: string) => Promise<{error?: string}>;
+	leaveRoom: (roomId: string, userId: string) => Promise<{ error?: string }>;
 }
 
 // Create context with default values
 export const WebSocketContext = createContext<WebSocketContextType>({
-	sendMessage: () => {},
-	sendChatMessage: () => {},
+	sendMessage: () => { },
+	sendChatMessage: () => { },
 	joinRoom: async () => ({ error: 'WebSocket not initialized' }),
-	createRoom: () => {},
+	createRoom: () => { },
 	leaveRoom: async () => ({ error: 'WebSocket not initialized' })
 });
 
@@ -42,17 +42,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				if (message.message) {
 					const room = rooms.find(r => r.id === message.message.room_id);
 					if (room && room.messages) {
-						// Get all messages and sort them
-						const allMessages = [...room.messages];
-						
 						// Remove any optimistic version of this message
-						const filteredMessages = allMessages.filter(m => 
-							!(m.userId === message.message.user_id && 
+						const filteredMessages = room.messages.filter(m =>
+							!(m.userId === message.message.user_id &&
 								m.text === message.message.content &&
-								new Date(m.timestamp).getTime() > Date.now() - 5000)
+								new Date(m.timestamp).getTime() > Date.now() - 5000) // Remove messages from the last 5 seconds
 						);
-						
-						// Add new message
+
+						// Add the new message
 						filteredMessages.push({
 							id: message.message.id,
 							text: message.message.content,
@@ -62,10 +59,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 						});
 
 						// Sort messages by timestamp
-						const sortedMessages = filteredMessages.sort((a, b) => 
+						const sortedMessages = filteredMessages.sort((a, b) =>
 							new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
 						);
 
+						// Update the room with the sorted messages
 						dispatch(updateRoom({
 							id: room.id,
 							messages: sortedMessages
@@ -148,7 +146,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
 			// Track this message content
 			sentMessageIds.current.add(content);
-			
+
 			const message: Message = {
 				type: MessageType.SEND_MESSAGE,
 				roomId,
@@ -156,7 +154,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				content
 			};
 			console.log('Sending chat message:', message);
-			
+
 			// Optimistically add message to UI with proper UUID type
 			dispatch(addMessage({
 				roomId,
@@ -168,12 +166,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 					timestamp: new Date().toISOString()
 				}
 			}));
-			
+
 			ws.current.send(JSON.stringify(message));
 		}
 	};
 
-	const joinRoom = (roomId: string, userId: string): Promise<{error?: string}> => {
+	const joinRoom = (roomId: string, userId: string): Promise<{ error?: string }> => {
 		return new Promise((resolve) => {
 			if (ws.current?.readyState === WebSocket.OPEN) {
 				ws.current.send(JSON.stringify({
@@ -200,7 +198,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		}
 	};
 
-	const leaveRoom = (roomId: string, userId: string): Promise<{error?: string}> => {
+	const leaveRoom = (roomId: string, userId: string): Promise<{ error?: string }> => {
 		return new Promise((resolve) => {
 			if (ws.current?.readyState === WebSocket.OPEN) {
 				ws.current.send(JSON.stringify({
