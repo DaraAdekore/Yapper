@@ -14,8 +14,8 @@ interface ChatRoomProps {
 interface MessageGroup {
   date: string;
   messages: {
-    id: UUID;
-    text: string;
+  id: UUID;
+  text: string;
     userId: UUID;
     username?: string;
     timestamp: any;
@@ -235,7 +235,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
           )}
           <button className="close-button" onClick={onClose}>×</button>
         </div>
-      </div>
+          </div>
 
       {!isMember ? (
         <div className="join-prompt">
@@ -246,7 +246,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
             disabled={isLoading}
           >
             {isLoading ? 'Joining...' : 'Join Room'}
-          </button>
+            </button>
         </div>
       ) : (
         <>
@@ -267,24 +267,22 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
               <div key={group.date} className="message-group">
                 <div className="date-separator">
                   <span>{getMessageDate(group.date)}</span>
-                </div>
+          </div>
                 {group.messages.map((message) => (
                   <div 
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
                   >
-                    {message.userId !== userId && (
-                      <span className="message-username">{message.username || 'Unknown User'}</span>
-                    )}
                     <div className="message-bubble">
-                      {message.text}
+                      <span className="message-username">{message.username || 'Unknown User'}</span>
+                      <span className="message-content">{message.text}</span>
+                      <span className="message-timestamp">
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
                     </div>
-                    <span className="message-timestamp">
-                      {new Date(message.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
                   </div>
                 ))}
               </div>

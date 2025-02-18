@@ -1,51 +1,112 @@
 .search-container {
     display: flex;
-    gap: 8px;
-    width: 100%;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 25px;
+    margin: 0 20px;
+    white-space: nowrap;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .search-input {
-    flex: 1;
-    min-width: 120px;
-    height: 36px;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    width: 240px;
+    height: 40px;
     font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-input:focus {
+    outline: none;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
 }
 
 .radius-input {
-    width: 80px;
-    height: 36px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    width: 100px;
+    height: 40px;
     font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.radius-input:focus {
+    outline: none;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.radius-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin-left: -8px;
+    user-select: none;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.search-spinner {
+    color: white;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .search-button {
-    height: 36px;
-    padding: 0 16px;
-    white-space: nowrap;
+    height: 40px;
+    min-width: 80px;
+    padding: 8px 20px;
+    background: linear-gradient(45deg, #0d6efd, #0a58ca);
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    transition: all 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-@media (max-width: 768px) {
-    .search-container {
-        gap: 6px;
-    }
-
-    .radius-input {
-        width: 60px;
-    }
+.search-button:hover {
+    background: linear-gradient(45deg, #0b5ed7, #0951ba);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-@media (max-width: 480px) {
-    .search-container {
-        flex-wrap: nowrap;
-    }
+.search-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-    .search-button {
-        padding: 0 12px;
-        font-size: 13px;
-    }
+.search-button:disabled {
+    background: linear-gradient(45deg, #ccc, #bbb);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Remove browser's default number input arrows */
+.radius-input::-webkit-outer-spin-button,
+.radius-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.radius-input[type=number] {
+    -moz-appearance: textfield;
 } 

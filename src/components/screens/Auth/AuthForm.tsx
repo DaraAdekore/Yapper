@@ -25,58 +25,81 @@ export default function AuthForm() {
     setStatus("Logging in...");
 
     try {
-      const result = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await result.json();
-      localStorage.setItem('user', JSON.stringify(data));
-      dispatch(setUser({ userId: data.id, username: data.username, email: data.email, latitude: data.latitude, longitude: data.longitude, token: true }))
-      console.log(user)
-      if (!data.latitude || !data.longitude) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            const id = data.id;
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/location`, {
-              method: 'POST',
-              body: JSON.stringify({ latitude, longitude, id }),
-              credentials: 'include',
-              headers: {
+        // First get location
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+                position => resolve(position),
+                error => reject(error),
+                { 
+                    maximumAge: 0,
+                    enableHighAccuracy: true,
+                    timeout: 5000
+                }
+            );
+        });
+
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        // Then proceed with login
+        const result = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await result.json();
+        
+        // Update location immediately after successful login
+        const locationResponse = await fetch(`${process.env.REACT_APP_API_URL}/location`, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                latitude, 
+                longitude, 
+                id: data.id 
+            }),
+            credentials: 'include',
+            headers: {
                 'Content-Type': 'application/json'
-              },
-            });
-            if (!response.ok) {
-              console.log(`Error updating location : ${response}`);
-            } else {
-              dispatch(setUser({ userId: data.id, username: data.username, email: data.email, latitude: data.latitude, longitude: data.longitude, token: true }))
-            }
-          },
-          (error) => {
-            console.error("Error getting location:", error);
-            setError("Please enable location services to use this app.");
-          },
-          { 
-            maximumAge: 0,  // Force fresh location
-            enableHighAccuracy: true,
-            timeout: 5000
-          }
-        );
-      } else {
-        dispatch(setUser({ userId: data.id, username: data.username, email: data.email, latitude: data.latitude, longitude: data.longitude, token: true }))
-      }
+            },
+        });
+
+        if (!locationResponse.ok) {
+            throw new Error('Failed to update location');
+        }
+
+        // Store user data with the new location
+        const userData = {
+            ...data,
+            latitude,
+            longitude
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        dispatch(setUser({ 
+            userId: data.id, 
+            username: data.username, 
+            email: data.email, 
+            latitude, 
+            longitude, 
+            token: true 
+        }));
+
     } catch (err) {
-      setError('Login failed. Please try again.');
+        if (err instanceof GeolocationPositionError) {
+            setError("Location access is required. Please enable location services and try again.");
+        } else {
+            console.error('Login error:', err);
+            setError('Login failed. Please try again.');
+        }
     } finally {
-      setIsLoading(false);
-      setStatus("");
+        setIsLoading(false);
+        setStatus("");
     }
-  };
+};
 
 
   const handleSignup = async (e: React.MouseEvent) => {

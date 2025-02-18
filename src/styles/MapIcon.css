@@ -8,7 +8,7 @@
   .marker-label {
     background: rgba(0, 0, 0, 0.75);
     color: white;
-    font-size: clamp(12px, 1.5vw, 14px);
+    font-size: 12px;
     padding: 4px 8px;
     border-radius: 5px;
     margin-top: 5px;
@@ -45,11 +45,5 @@
         transform: scale(1);
         opacity: 1;
     }
-}
-
-@media (max-width: 768px) {
-  .marker-cluster {
-    transform: scale(0.8);
-  }
 }
   

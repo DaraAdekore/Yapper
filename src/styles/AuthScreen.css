@@ -9,21 +9,4 @@
   height: 100vh;
   background-color: #f4f4f4;
   overflow: hidden;
-  min-height: 100vh;
-  padding: clamp(20px, 5vw, 40px);
-}
-
-.logo-container {
-  margin-bottom: clamp(20px, 5vh, 40px);
-}
-
-@media (max-width: 480px) {
-  .auth-screen {
-    padding: 10px;
-    justify-content: center;
-  }
-
-  .logo-container {
-    transform: scale(0.8);
-  }
 }
