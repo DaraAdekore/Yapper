@@ -53,6 +53,45 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 12px;
+  max-width: 80%;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+}
+
+.message-username {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.message-timestamp {
+  opacity: 0.6;
+}
+
+.own-message {
+  align-self: flex-end;
+}
+
+.own-message .message-header {
+  justify-content: flex-end;
+}
+
+.own-message .message-username {
+  color: #ff007f;
+  order: 2;
+}
+
+.other-message {
+  align-self: flex-start;
+}
+
+.other-message .message-username {
+  color: #999;
 }
 
 .message-bubble {
@@ -60,47 +99,6 @@
   padding: 10px 15px;
   border-radius: 18px;
   word-break: break-word;
-}
-
-.message-username {
-  font-size: 0.8rem;
-  margin-bottom: 4px;
-  opacity: 0.8;
-}
-
-.own-message {
-  align-self: flex-end;
-}
-
-.own-message .message-bubble {
-  background-color: #ff007f;
-  color: white;
-  border-bottom-right-radius: 5px;
-}
-
-.own-message .message-username {
-  align-self: flex-end;
-  color: #ff007f;
-}
-
-.other-message {
-  align-self: flex-start;
-}
-
-.other-message .message-bubble {
-  background-color: #333;
-  color: white;
-  border-bottom-left-radius: 5px;
-}
-
-.other-message .message-username {
-  color: #999;
-}
-
-.message-timestamp {
-  font-size: 0.7rem;
-  margin-top: 4px;
-  opacity: 0.6;
 }
 
 .message-input-container {

@@ -98,7 +98,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Group sorted messages by date
     return sortedMessages.reduce((groups: MessageGroup[], message) => {
       const date = new Date(message.timestamp).toLocaleDateString();
       const existingGroup = groups.find(group => group.date === date);
@@ -208,23 +207,25 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                 <div className="date-separator">
                   <span>{getMessageDate(group.date)}</span>
                 </div>
-                {[...group.messages].reverse().map((message) => (
+                {group.messages.map((message) => (
                   <div 
                     key={message.id}
                     className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
                   >
-                    {message.userId !== userId && (
-                      <span className="message-username">{message.username || 'Unknown User'}</span>
-                    )}
+                    <div className="message-header">
+                      <span className="message-username">
+                        {message.userId === userId ? 'You' : message.username}
+                      </span>
+                      <span className="message-timestamp">
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
                     <div className="message-bubble">
                       {message.text}
                     </div>
-                    <span className="message-timestamp">
-                      {new Date(message.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
                   </div>
                 ))}
               </div>
