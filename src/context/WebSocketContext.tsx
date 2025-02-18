@@ -42,23 +42,20 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
 					const room = rooms.find(r => r.id === message.message.room_id);
-					if (room && room.messages) {
-						// Only add the message if it's not from the current user
-						if (message.message.user_id !== user.userId) {
-							const updatedMessages = [...room.messages];
-							updatedMessages.push({
-								id: message.message.id,
-								text: message.message.content,
-								userId: message.message.user_id,
-								username: message.message.username,
-								timestamp: message.message.timestamp
-							});
+					if (room && room.messages && message.message.user_id !== user.userId) {
+						const updatedMessages = [...room.messages];
+						updatedMessages.push({
+							id: message.message.id,
+							text: message.message.content,
+							userId: message.message.user_id,
+							username: message.message.username,
+							timestamp: message.message.timestamp
+						});
 
-							dispatch(updateRoom({
-								id: room.id,
-								messages: updatedMessages
-							}));
-						}
+						dispatch(updateRoom({
+							id: room.id,
+							messages: updatedMessages
+						}));
 					}
 				}
 				break;
@@ -135,22 +132,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 	const sendChatMessage = (roomId: UUID, content: string) => {
 		if (ws.current?.readyState === WebSocket.OPEN && user.userId) {
-			// Create a unique message ID for both optimistic and server message
 			const messageId = uuidv4() as UUID;
 			
-			const message: Message = {
-				type: MessageType.SEND_MESSAGE,
-				roomId,
-				userId: user.userId,
-				content,
-				messageId // Send the ID to server
-			};
-
-			// Optimistically add message with the same ID
+			// Add message optimistically first
 			dispatch(addMessage({
 				roomId,
 				message: {
-					id: messageId,  // Use the same ID
+					id: messageId,
 					text: content,
 					userId: user.userId,
 					username: user.username || 'You',
@@ -158,6 +146,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				}
 			}));
 
+			// Then send to server
+			const message: Message = {
+				type: MessageType.SEND_MESSAGE,
+				roomId,
+				userId: user.userId,
+				content,
+				messageId
+			};
 			ws.current.send(JSON.stringify(message));
 		}
 	};
