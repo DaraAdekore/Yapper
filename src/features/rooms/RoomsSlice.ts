@@ -214,7 +214,6 @@ const roomsSlice = createSlice({
                 
                 // Only add if not a duplicate
                 if (!room.messages.some(m => m.id === action.payload.message.id)) {
-                    // Simply push the new message to the end
                     room.messages.push(action.payload.message);
                 }
 

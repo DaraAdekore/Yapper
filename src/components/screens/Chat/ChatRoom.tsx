@@ -62,26 +62,26 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !isMember || !activeRoomId || !userId) return;
 
-    // Create the optimistic message
-    const optimisticMessage = {
-      id: uuidv4() as UUID,
-      text: newMessage.trim(),
-      userId: userId,
-      username: 'You',
-      timestamp: new Date().toISOString()
-    };
+    const messageId = uuidv4() as UUID;
+    const timestamp = new Date().toISOString();
 
     // Add message optimistically to the local state
     if (activeRoom) {
-      // Ensure messages array exists and add new message at the end
-      const currentMessages = activeRoom.messages || [];
-      dispatch(updateRoom({
-        id: activeRoom.id,
-        messages: [...currentMessages, optimisticMessage] // Add to end without sorting
-      }));
+        const optimisticMessage = {
+            id: messageId,
+            text: newMessage.trim(),
+            userId: userId,
+            username: 'You',
+            timestamp
+        };
+
+        dispatch(updateRoom({
+            id: activeRoom.id,
+            messages: [...(activeRoom.messages || []), optimisticMessage]
+        }));
     }
 
-    // Send to server
+    // Send to server with same ID
     sendChatMessage(activeRoomId, newMessage.trim());
     setNewMessage("");
   };
