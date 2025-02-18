@@ -41,23 +41,27 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
-					// Skip our own messages since we handle them optimistically
-					if (message.message.user_id === user.userId) {
-						return;
-					}
-
 					const room = rooms.find(r => r.id === message.message.room_id);
 					if (room) {
-						dispatch(addMessage({
-							roomId: room.id,
-							message: {
-								id: message.message.id,
-								text: message.message.content,
-								userId: message.message.user_id,
-								username: message.message.username,
-								timestamp: message.message.timestamp
-							}
-						}));
+						// Skip if this is a message we just sent (it's already in the state)
+						const isRecentMessage = room.messages?.some(m => 
+							m.text === message.message.content && 
+							m.userId === message.message.user_id &&
+							new Date(m.timestamp).getTime() > Date.now() - 5000
+						);
+
+						if (!isRecentMessage) {
+							dispatch(addMessage({
+								roomId: room.id,
+								message: {
+									id: message.message.id,
+									text: message.message.content,
+									userId: message.message.user_id,
+									username: message.message.username,
+									timestamp: message.message.timestamp
+								}
+							}));
+						}
 					}
 				}
 				break;
@@ -137,16 +141,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			const messageId = uuidv4() as UUID;
 			const timestamp = new Date().toISOString();
 
-			// Send to server first
-			ws.current.send(JSON.stringify({
-				type: MessageType.SEND_MESSAGE,
-				roomId,
-				userId: user.userId,
-				content,
-				messageId
-			}));
-
-			// Then add optimistically
+			// Add optimistically first
 			dispatch(addMessage({
 				roomId,
 				message: {
@@ -156,6 +151,15 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 					username: user.username || 'You',
 					timestamp
 				}
+			}));
+
+			// Then send to server
+			ws.current.send(JSON.stringify({
+				type: MessageType.SEND_MESSAGE,
+				roomId,
+				userId: user.userId,
+				content,
+				messageId
 			}));
 		}
 	};
