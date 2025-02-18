@@ -4,7 +4,6 @@ import { MessageType, Message, WebSocketMessage } from '../Types/Types';
 import { updateRoom, addMessage, addRoom, incrementUnread, addNewRoom, setActiveRoom } from '../features/rooms/RoomsSlice';
 import { UUID } from 'crypto';
 import { stat } from 'fs';
-import { useAppSelector } from '../store/hooks';
 import { RootState } from '../store/store';
 
 // Define the context type
@@ -30,6 +29,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	const dispatch = useDispatch();
 	const user = useSelector((state: RootState) => state.user);
 	const activeRoomId = useSelector((state: RootState) => state.rooms.activeRoomId);
+	const rooms = useSelector((state: RootState) => state.rooms.rooms);
 
 	// Add a ref to track sent message IDs
 	const sentMessageIds = useRef<Set<string>>(new Set());
@@ -40,8 +40,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		switch (message.type) {
 			case MessageType.NEW_MESSAGE:
 				if (message.message) {
-					const room = useAppSelector(state => state.rooms.rooms.find(r => r.id === message.message.room_id));
-					if (room && room.messages) {  // Check if messages exists
+					const room = rooms.find(r => r.id === message.message.room_id);
+					if (room && room.messages) {
 						const updatedMessages = [...room.messages].filter(m => 
 							!(m.userId === message.message.user_id && 
 								m.text === message.message.content &&
@@ -57,7 +57,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 						});
 
 						dispatch(updateRoom({
-							...room,
+							id: room.id,
 							messages: updatedMessages
 						}));
 					}
