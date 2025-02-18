@@ -150,7 +150,7 @@ const roomsSlice = createSlice({
                     room.lastActivity = action.payload.lastActivity;
                 }
                 if (action.payload.messages) {
-                    room.messages = action.payload.messages; // Trust server order
+                    room.messages = action.payload.messages;
                 }
             }
         },
@@ -214,11 +214,7 @@ const roomsSlice = createSlice({
                 
                 // Only add if not a duplicate
                 if (!room.messages.some(m => m.id === action.payload.message.id)) {
-                    // Add new message and sort by timestamp
-                    const allMessages = [...room.messages, action.payload.message];
-                    room.messages = allMessages.sort((a, b) => 
-                        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-                    );
+                    room.messages.push(action.payload.message);
                 }
 
                 if (state.activeRoomId !== room.id) {

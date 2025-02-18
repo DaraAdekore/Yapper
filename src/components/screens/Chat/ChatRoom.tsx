@@ -109,7 +109,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   const groupMessagesByDate = (messages: ChatMessage[]) => {
     if (!messages || messages.length === 0) return [];
     
-    // Just group by date, maintain original order
+    // Just group by date
     const groups = messages.reduce((groups: { [key: string]: ChatMessage[] }, message) => {
         const date = new Date(message.timestamp).toLocaleDateString();
         if (!groups[date]) {
@@ -119,10 +119,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
         return groups;
     }, {});
 
-    // Convert to array, maintain server order
+    // Convert to array
     return Object.entries(groups).map(([date, messages]) => ({
         date,
-        messages // Keep original message order
+        messages
     }));
   };
 
