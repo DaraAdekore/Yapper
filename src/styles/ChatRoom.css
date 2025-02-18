@@ -78,23 +78,23 @@
 
 /* Own messages (right side) */
 .own-message {
-  align-self: flex-start;
+  align-self: flex-end;
 }
 
 .own-message .message-header {
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .own-message .message-username {
   color: #ff007f;
-  order: 0;
+  order: 2;
 }
 
 .own-message .message-bubble {
   background: #ff007f;
   color: white;
-  border-radius: 18px 18px 18px 4px;
-  align-self: flex-start;
+  border-radius: 18px 18px 4px 18px;
+  align-self: flex-end;
 }
 
 /* Other messages (left side) */
