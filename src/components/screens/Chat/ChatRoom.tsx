@@ -141,34 +141,41 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
   const groupMessagesByDate = (messages: any[]) => {
     const groups = messages.reduce((groups: MessageGroup[], message) => {
-      const date = new Date(message.timestamp).toLocaleDateString();
-      const existingGroup = groups.find(group => group.date === date);
-      
-      if (existingGroup) {
-        existingGroup.messages.push(message);
-        // Sort messages within group by timestamp
-        existingGroup.messages.sort((a, b) => 
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-      } else {
-        groups.push({ date, messages: [message] });
-      }
-      
-      return groups;
+        // Parse ISO timestamp string to Date
+        const messageDate = new Date(message.timestamp);
+        const date = messageDate.toISOString().split('T')[0]; // Get YYYY-MM-DD part
+        
+        const existingGroup = groups.find(group => group.date === date);
+        
+        if (existingGroup) {
+            existingGroup.messages.push(message);
+            // Sort messages within group by ISO timestamp
+            existingGroup.messages.sort((a, b) => 
+                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+        } else {
+            groups.push({ date, messages: [message] });
+        }
+        
+        return groups;
     }, []);
 
     // Sort groups by date (oldest first)
     return groups.sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+        new Date(a.date).getTime() - new Date(b.date).getTime()
     );
   };
 
   const getMessageDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+    if (date.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
+        return 'Today';
+    } else if (date.toISOString().split('T')[0] === yesterday.toISOString().split('T')[0]) {
+        return 'Yesterday';
     }
     return date.toLocaleDateString();
   };
@@ -279,7 +286,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
                       <span className="message-timestamp">
                         {new Date(message.timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
+                          hour12: true
                         })}
                       </span>
                     </div>
