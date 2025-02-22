@@ -251,6 +251,12 @@ const roomsSlice = createSlice({
         setSearchResults: (state, action: PayloadAction<Room[]>) => {
             // Only update search results, don't affect joined rooms
             state.searchResults = action.payload;
+        },
+        joinRoom: (state, action: PayloadAction<{ roomId: UUID; userId: UUID }>) => {
+            const room = state.rooms.find(r => r.id === action.payload.roomId);
+            if (room) {
+                room.isJoined = true;
+            }
         }
     },
     extraReducers: (builder) => {
@@ -266,5 +272,5 @@ const roomsSlice = createSlice({
     }
 });
 
-export const { setRooms, addRoom, removeRoom, setActiveRoom, setRoomMessages, addMessage, setFilteredRooms, setQueryFilter, setRadiusFilter, updateRoom, incrementUnread, clearUnread, addNewRoom, clearNewRoomFlag, setSearchResults } = roomsSlice.actions;
+export const { setRooms, addRoom, removeRoom, setActiveRoom, setRoomMessages, addMessage, setFilteredRooms, setQueryFilter, setRadiusFilter, updateRoom, incrementUnread, clearUnread, addNewRoom, clearNewRoomFlag, setSearchResults, joinRoom } = roomsSlice.actions;
 export default roomsSlice.reducer;

@@ -4,22 +4,11 @@ import { useSpring, animated, to } from "@react-spring/web";
 import { useWebSocket } from "../../../context/WebSocketContext";
 import "../../../styles/ChatRoom.css";
 import { useAppSelector } from "../../../store/hooks";
-import { updateRoom, clearUnread, clearNewRoomFlag } from "../../../features/rooms/RoomsSlice";
+import { updateRoom, clearUnread, clearNewRoomFlag, joinRoom } from "../../../features/rooms/RoomsSlice";
 import { UUID } from "crypto";
 
 interface ChatRoomProps {
   onClose: () => void;
-}
-
-interface MessageGroup {
-  date: string;
-  messages: {
-  id: UUID;
-  text: string;
-    userId: UUID;
-    username?: string;
-    timestamp: any;
-  }[];
 }
 
 const AnimatedDiv = animated('div');
@@ -139,47 +128,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
     }
   };
 
-  const groupMessagesByDate = (messages: any[]) => {
-    const groups = messages.reduce((groups: MessageGroup[], message) => {
-        // Parse ISO timestamp string to Date
-        const messageDate = new Date(message.timestamp);
-        const date = messageDate.toISOString().split('T')[0]; // Get YYYY-MM-DD part
-        
-        const existingGroup = groups.find(group => group.date === date);
-        
-        if (existingGroup) {
-            existingGroup.messages.push(message);
-            // Sort messages within group by ISO timestamp
-            existingGroup.messages.sort((a, b) => 
-                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-            );
-        } else {
-            groups.push({ date, messages: [message] });
-        }
-        
-        return groups;
-    }, []);
-
-    // Sort groups by date (oldest first)
-    return groups.sort((a, b) => 
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-  };
-
-  const getMessageDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (date.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
-        return 'Today';
-    } else if (date.toISOString().split('T')[0] === yesterday.toISOString().split('T')[0]) {
-        return 'Yesterday';
-    }
-    return date.toLocaleDateString();
-  };
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -215,84 +163,31 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
   }
 
   return (
-    <AnimatedDiv
-      className={`chat-room ${showChat ? 'open' : ''}`}
-      style={{
-        transform: to([x, y], (x, y) => `translate(${x}px, ${y}px)`),
-        width: dimensions.width,
-        height: dimensions.height,
-      }}
-    >
-      <div 
-        className="chat-header"
-        onMouseDown={(e) => handleMouseDown(e, 'drag')}
-      >
-        <div className="chat-header-content">
-          <h2>{activeRoom.name}</h2>
-        </div>
-        <div className="chat-header-buttons">
-          {isMember && (
-            <button 
-              className="leave-button"
-              onClick={handleLeaveRoom}
-              disabled={isLoading}
-            >
-              Leave Room
-            </button>
-          )}
-          <button className="close-button" onClick={onClose}>×</button>
-        </div>
-          </div>
+    <div className={`chat-room ${isMember ? 'open' : ''}`}>
+      <div className="chat-header">
+        <h2>{activeRoom.name}</h2>
+        <button className="close-button" onClick={onClose}>×</button>
+      </div>
 
       {!isMember ? (
         <div className="join-prompt">
           <p>Join this room to start chatting!</p>
-          <button 
-            className="join-button"
-            onClick={handleJoinRoom}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Joining...' : 'Join Room'}
-            </button>
+          <button onClick={() => {
+            if (activeRoomId && userId) {
+              dispatch(joinRoom({ roomId: activeRoomId, userId }));
+            }
+          }}>Join Room</button>
         </div>
       ) : (
         <>
           <div className="messages-container">
-            {activeRoom.messages?.length === 0 && (
-              <div className="no-messages">
-                <p>No messages yet. Start the conversation!</p>
-              </div>
-            )}
-            {activeRoom.lastActivity && (
-              <div className="activity-notification">
-                {activeRoom.lastActivity.type === 'join' 
-                  ? `${activeRoom.lastActivity.username} joined the room`
-                  : `${activeRoom.lastActivity.username} left the room`}
-              </div>
-            )}
-            {activeRoom.messages && groupMessagesByDate(activeRoom.messages).map((group) => (
-              <div key={group.date} className="message-group">
-                <div className="date-separator">
-                  <span>{getMessageDate(group.date)}</span>
-          </div>
-                {group.messages.map((message) => (
-                  <div 
-                    key={message.id}
-                    className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}
-                  >
-                    <div className="message-bubble">
-                      <span className="message-username">{message.username || 'Unknown User'}</span>
-                      <span className="message-content">{message.text}</span>
-                      <span className="message-timestamp">
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+            {activeRoom.messages && activeRoom.messages.map((message) => (
+              <div key={message.id} className={`message ${message.userId === userId ? 'own-message' : 'other-message'}`}>
+                <div className="message-bubble">
+                  <span className="message-username">{message.username || 'Unknown User'}</span>
+                  <span className="message-content">{message.text}</span>
+                  <span className="message-timestamp">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                </div>
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -300,30 +195,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
 
           <div className="message-input-container">
             <textarea
-              className="message-textarea"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
-              disabled={!isMember}
               rows={1}
               maxLength={500}
             />
-            <button 
-              className="send-button"
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim() || !isMember}
-            >
-              Send
-            </button>
+            <button onClick={handleSendMessage} disabled={!newMessage.trim()}>Send</button>
           </div>
         </>
       )}
-      <div 
-        className="resize-handle"
-        onMouseDown={(e) => handleMouseDown(e, 'resize')}
-      />
-    </AnimatedDiv>
+    </div>
   );
 };
 
