@@ -11,6 +11,17 @@ interface ChatRoomProps {
   onClose: () => void;
 }
 
+interface MessageGroup {
+  date: string;
+  messages: {
+  id: UUID;
+  text: string;
+    userId: UUID;
+    username?: string;
+    timestamp: any;
+  }[];
+}
+
 const AnimatedDiv = animated('div');
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ onClose }) => {
